@@ -1,0 +1,83 @@
+---
+title: "Self-check overview"
+date: "`r Sys.Date()`"
+author: "Koen Leuveld"
+output: pdf_document
+header-includes:
+   - \usepackage{booktabs}
+---
+
+<!-- 
+Self Check overview
+Author: Koen Leuveld
+
+This file compiles data from from the self check of VU-FSS Research Ethics Review Committee into an overview document.
+The data is downloaded from qualtrics by Qualtrics Download.R and processed by RERC_analysis.R
+
+-->
+
+
+```{r, include=FALSE}
+library(knitr)
+library(kableExtra)
+
+#user defined variables:
+start_date <- "2022-03-29"
+setwd("C:/Users/kld330/SurfDrive2/RERC/Qualtrics")
+download_data <- T
+
+
+##further setup (no changes needed)
+
+#make the start date useable to the sourced scripts
+#see: https://stackoverflow.com/questions/14525580/how-to-pass-command-line-arguments-when-calling-source-on-an-r-file-within-ano
+commandArgs <- function(...) start_date
+
+#Download data to update CSV files used by RERC_analysis.r
+if (download_data) {
+	source("Qualtrics Download.R") 
+}
+
+#analyze
+source("RERC_analysis.r")
+```
+
+```{r echo=FALSE}
+#display all tables and plots
+kable(staff_overview,
+	booktabs = T ,
+	caption=paste("Completed self checks by staff and PhD candidates since ",start_date, sep="", collapse=NULL),
+	position = "h")%>%
+		kable_styling(latex_options = "striped") %>%
+		column_spec(1,width="3cm") %>%
+		column_spec(2,width="1cm") %>%
+		column_spec(3,width="1cm") %>%
+		column_spec(4,width="6cm") %>%
+		column_spec(5,width="1cm") 
+kable(students_overview, 
+	booktabs = T ,
+	longtable=F,
+	caption=paste("Number of completed checks by students by department since ",start_date, sep="", collapse=NULL),
+	position = "h")%>%
+		kable_styling(latex_options = "striped") 
+kable(staff_overview_lastmonths,
+	booktabs = T, 
+	longtable=F,
+	caption="Number of completed checks by staff and PhD candidates in the last 12 months",
+	position="h")%>%
+		kable_styling(latex_options = "striped") 
+kable(students_overview_lastmonths, 
+	booktabs = T,
+	longtable=F ,
+	caption="Number of completed checks by master students in the last 12 months",
+	position="h")%>%
+		kable_styling(latex_options = "striped")
+```
+
+\clearpage
+
+```{r echo=FALSE}
+plot_staff
+plot_staff_department_bar
+plot_students
+```
