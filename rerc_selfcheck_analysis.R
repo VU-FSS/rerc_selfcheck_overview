@@ -1,22 +1,20 @@
 #RERC Analysis
 #This file does some data processing on analysis on VU-FSS Research Ethics Review Committee Self Check Data
-#The file requires Qualtrics Download.R to download the csv files; Self Check Overview.rmd then compiles the tables and figures into a document
+#The file is intended to be run from rerc_selfcheck_overview.rmd which compiles data into a document
+#The data required is downloaded in rerc_selfcheck_qualtricsdownload.R; 
+
 
 #Author: Koen Leuveld
-#April 2022
+#May 2022
 
-#libraries used
-#library(dplyr)
-#library(stringr)
 library(tidyverse)
-#library(ggplot2) 
 
 #some initial variables
 departments = data.frame(Q2.6 = c("Communication Science","Organization Sciences","Public Administration and Political Science","Social and Cultural Anthropology","Sociology"),
     Dept=c("COM","ORG","B&P","SCA","SOC"))
 
 #analysis of recent applications
-self_check <- read.csv("self_check_new.csv")
+self_check <- read.csv("data/self_check_new.csv")
 
 #count the number of times an ethics review is required (answers ending in (*))
 self_check$numissues <- apply(self_check, 1, function(x) sum(str_detect(x, "\\(\\*\\)$"),na.rm = TRUE))
@@ -54,7 +52,7 @@ students_overview <-    self_check %>%
 ##Plots
 
 #Data Prep
-self_check_all <- read.csv("self_check_all.csv")
+self_check_all <- read.csv("data/self_check_all.csv")
 
 self_check_all_overview <- self_check_all %>%
     mutate(Month=substring(self_check_all$RecordedDate,1,7)) %>%

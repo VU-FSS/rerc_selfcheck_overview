@@ -12,7 +12,7 @@ Self Check overview
 Author: Koen Leuveld
 
 This file compiles data from from the self check of VU-FSS Research Ethics Review Committee into an overview document.
-The data is downloaded from qualtrics by Qualtrics Download.R and processed by RERC_analysis.R
+The data is downloaded from qualtrics by rerc_selfcheck_qualtricsdownload.R and processed by rerc_selfcheck_analysis.R
 
 -->
 
@@ -24,7 +24,7 @@ library(kableExtra)
 #user defined variables:
 start_date <- "2022-04-20"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- F
+download_data <- T
 
 
 ##further setup (no changes needed)
@@ -35,11 +35,11 @@ commandArgs <- function(...) start_date
 
 #Download data to update CSV files used by RERC_analysis.r
 if (download_data) {
-	source("Qualtrics Download.R") 
+	source("rerc_selfcheck_qualtricsdownload.R") 
 }
 
 #analyze
-source("RERC_analysis.r")
+source("rerc_selfcheck_analysis.r")
 ```
 
 ```{r echo=FALSE}

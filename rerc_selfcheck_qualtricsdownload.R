@@ -2,7 +2,7 @@
 #Author: Koen Leuveld
 
 #This file downloads the qualtrics data for the self check of VU-FSS Research Ethics Review Committee.
-#This data is used by RERC_analysis.R to create tables and figures, which are put into a document by; Self Check Overview.rmd
+#This data is used by rerc_selfcheck_analysis.R to create tables and figures, which are put into a document by rerc_selfcheck_selfcheck_overview.rmd
 
 #it assumes qualtrics credentials have been set using qualtRics' "qualtrics_api_credentials" function
 #the start date is set in Self Check Overview.rmd. If it is not, a default date will be used.
@@ -33,7 +33,7 @@ self_check_all_raw <- fetch_survey(surveyID = surveys$id[1],
 self_check_all <- self_check_all_raw[self_check_all_raw$Finished,]
 
 
-write.csv(self_check_all,"self_check_all.csv", row.names = TRUE)
+write.csv(self_check_all,"data/self_check_all.csv", row.names = TRUE)
 
 
 #a separate one for the new data, since things were changed and downloading all gives an error
@@ -45,5 +45,5 @@ self_check_new_raw <- fetch_survey(surveyID = surveys$id[1],
 
 
 self_check_new <- self_check_new_raw[self_check_new_raw$Finished,]
-write.csv(self_check_new,"self_check_new.csv", row.names = TRUE)
+write.csv(self_check_new,"data/self_check_new.csv", row.names = TRUE)
 
