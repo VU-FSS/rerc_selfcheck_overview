@@ -24,7 +24,7 @@ library(kableExtra)
 #user defined variables:
 start_date <- "2022-04-20"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- T
+download_data <- F
 
 
 ##further setup (no changes needed)
@@ -46,14 +46,17 @@ source("RERC_analysis.r")
 #display all tables and plots
 kable(staff_overview,
 	booktabs = T ,
+	longtable=T,
 	caption=paste("Completed self checks by staff and PhD candidates since ",start_date, sep="", collapse=NULL),
 	position = "h")%>%
 		kable_styling(latex_options = "striped") %>%
+		kable_styling(latex_options = "repeat_header") %>%
 		column_spec(1,width="3cm") %>%
 		column_spec(2,width="1cm") %>%
 		column_spec(3,width="1cm") %>%
 		column_spec(4,width="6cm") %>%
 		column_spec(5,width="1cm") 
+
 kable(students_overview, 
 	booktabs = T ,
 	longtable=F,
