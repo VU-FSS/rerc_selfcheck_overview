@@ -63,18 +63,28 @@ kable(students_overview,
 	caption=paste("Number of completed checks by students by department since ",start_date, sep="", collapse=NULL),
 	position = "h")%>%
 		kable_styling(latex_options = "striped") 
+
+
+months <- nrow(staff_overview_lastmonths) - 1
+
 kable(staff_overview_lastmonths,
 	booktabs = T, 
 	longtable=F,
-	caption="Number of completed checks by staff and PhD candidates in the last 12 months",
-	position="h")%>%
-		kable_styling(latex_options = "striped") 
+	caption=paste("Number of completed checks by staff and PhD candidates in the last",months,"months",sep=" ", collapse=NULL),
+	position="h") %>%
+	kable_styling(latex_options = "striped") %>%
+	row_spec(months,hline_after=TRUE)
+
+
 kable(students_overview_lastmonths, 
 	booktabs = T,
 	longtable=F ,
-	caption="Number of completed checks by master students in the last 12 months",
+	caption=paste("Number of completed checks by master students in the last",months,"months",sep=" ", collapse=NULL),
 	position="h")%>%
-		kable_styling(latex_options = "striped")
+	kable_styling(latex_options = "striped") %>%
+	row_spec(months,hline_after=TRUE)
+
+
 ```
 
 \clearpage

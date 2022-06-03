@@ -35,6 +35,8 @@ staff_overview <-   self_check %>%
                     inner_join(departments,by="Q2.6")                    %>%
                     select("Name","Dept","Position","Q2.8","Outcome") %>%
                     rename("Project"=Q2.8 )
+
+
    
 
 #generate an overview for the students: here we only care about numbers. 
@@ -70,32 +72,39 @@ self_check_all_overview <- self_check_all %>%
     arrange(Position,Month)
 
 
+#
+    num_months = 12
+
 #an overview table with number of self checks for each department
 staff_overview_lastmonths <- self_check_all_overview %>%
     filter(Department!="Total") %>%
     filter(Position=="Staff") %>%
     select(-Position) %>%
-    slice_tail(n=60) %>%
+    slice_tail(n=5*num_months) %>%
     pivot_wider(names_from=Department, values_from=N,values_fill=0) %>%
     rename("COM"= "Communication Science",
         "ORG"="Organization Sciences",
         "B&P"="Public Administration and Political Science",
         "SOC"="Sociology",
-        "SCA"="Social and Cultural Anthropology")
+        "SCA"="Social and Cultural Anthropology") %>%
+    bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
+
+
+
 
 #an overview table with number of self checks for each department
 students_overview_lastmonths <- self_check_all_overview %>%
     filter(Department!="Total") %>%
     filter(Position=="Student") %>%
     select(-Position) %>%
-    slice_tail(n=60) %>%
+    slice_tail(n=5*num_months) %>%
     pivot_wider(names_from=Department, values_from=N,values_fill=0) %>%
     rename("COM"= "Communication Science",
         "ORG"="Organization Sciences",
         "B&P"="Public Administration and Political Science",
         "SOC"="Sociology",
-        "SCA"="Social and Cultural Anthropology")
-
+        "SCA"="Social and Cultural Anthropology") %>%
+    bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
 
 
 #plot total self-checks by staff
