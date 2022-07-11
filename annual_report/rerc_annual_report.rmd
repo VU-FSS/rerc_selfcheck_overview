@@ -1,0 +1,88 @@
+---
+title: "Research Ethics Review Committee Anual Report 2021"
+date: "`r Sys.Date()`"
+author: "Koen Leuveld and René Bekkers"
+output: pdf_document
+header-includes:
+   - \usepackage{booktabs}
+---
+
+
+```{r, include=FALSE}
+library(knitr)
+library(kableExtra)
+
+#user defined variables:
+start_date <- "2022-06-20"
+setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
+download_data <- F
+
+
+
+
+##further setup (no changes needed)
+
+#make the start date useable to the sourced scripts
+#see: https://stackoverflow.com/questions/14525580/how-to-pass-command-line-arguments-when-calling-source-on-an-r-file-within-ano
+commandArgs <- function(...) start_date
+
+#Download data to update CSV files used by RERC_analysis.r
+if (download_data) {
+   source("rerc_selfcheck_qualtricsdownload.R") 
+}
+
+#analyze
+source("rerc_selfcheck_analysis.r")
+```
+
+
+
+
+This memo reports research ethics review activities at the Faculty of Social Sciences at Vrije Universiteit Amsterdam. Since 2016 the RERC has reviewed ethics issues of research by faculty members. Since 2017 the RERC provides an online self-check tool that researchers and students can use to screen their research plans for ethics issues. The analysis below is based on data entered in the self-check and full application surveys.
+
+Since its inception, the self-check tool has been used more than 1700 times. Table 1 provides a breakdown of the use of the tool by FSS department.
+
+```{r echo=FALSE}
+kable(total_by_year,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks per department",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE)
+```
+
+Communication Science is by far the most active user of the self-check. The tool is less frequently used at Political Science and Public Administration, Sociology, and Organization Science. The tool is least frequently used at Social and Cultural Anthropology.
+
+Since the 2017-2018 academic year, RERC members have encouraged students in the master programs to use the tool. Indeed the data show that the tool is most frequently used by students in master programs. 
+
+Table 2 provides a breakdown of use by researchers alone, excluding students. We see that Communication Science remains the most active, with almost twice the numbers in the Department of Sociology and Organization Science. Social and Cultural Anthropology and Political Science and Public Administration use the self-check tool least intensively.
+
+
+```{r echo=FALSE}
+kable(staff_by_year,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks excluding students",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE)
+
+```
+
+
+```{r echo=FALSE}
+kable(students_by_year,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks by students",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE)
+
+```
+
+
+
+
+
