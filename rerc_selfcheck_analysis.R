@@ -12,23 +12,30 @@
 
 library(tidyverse)
 
+
 #some initial variables
 departments = data.frame(Q2.6 = c("Communication Science",
                                   "Organization Sciences",
                                   "Public Administration and Political Science",
                                   "Social and Cultural Anthropology",
                                   "Sociology"),
-                        Dept=c("COM","ORG","B&P","SCA","SOC"))
+                         Dept=c("COM","ORG","B&P","SCA","SOC"))
 
-#analysis of recent applications
+#################################
+#analysis of recent applications#
+#################################
+
 self_check <- read.csv("data/self_check_new.csv")
 
-#count the number of times an ethics review is required (answers ending in (*))
+
+
+
+##count the number of times an ethics review is required (answers ending in (*))
 self_check$numissues <- apply(self_check, 1, 
                               function(x) sum(str_detect(x, "\\(\\*\\)$"),
                                               na.rm = TRUE))
 
-#generate variables that indicate outcomes based on the number of issues
+##generate variables that indicate outcomes based on the number of issues
 self_check$Outcome <- ifelse(self_check$numissues>0,"Review needed","OK")
 self_check$review_needed <- ifelse(self_check$numissues>0,1,0)
 self_check$OK <- ifelse(self_check$numissues>0,0,1)
@@ -36,7 +43,7 @@ self_check$OK <- ifelse(self_check$numissues>0,0,1)
 
 self_check$Q2.8 <- gsub("[\r\n]", " ", self_check$Q2.8)
 
-#generate an overview for all the staff and PhD candidates.
+##generate an overview for all the staff and PhD candidates.
 staff_overview <-   self_check %>%
                     filter(Q2.4 == "PhD candidate" | 
                            Q2.4 == "Postdoc / assistant / 
@@ -52,9 +59,9 @@ staff_overview <-   self_check %>%
 
    
 
-#generate an overview for the students: here we only care about numbers. 
-#We also want to report all departments, even if they have 0 self-checks, 
-#so we join in names for all departments. This removes non-valid dept names
+##generate an overview for the students: here we only care about numbers. 
+##We also want to report all departments, even if they have 0 self-checks, 
+##so we join in names for all departments. This removes non-valid dept names
 students_overview <-    self_check %>% 
                         filter(Q2.4 == "Student in a master program" ) %>%
                         group_by(Q2.6)%>%
@@ -66,17 +73,21 @@ students_overview <-    self_check %>%
                         arrange(Q2.6) %>%
                         rename("Review Needed"=review_needed)
 
-##Plots
+#############################
+#Analysis of historic trends#
+#############################
 
-#Data Prep
+##Data Prep
 self_check_all <- read.csv("data/self_check_all.csv")
+
+#the professors string is too long to fit below
+professors <- "Postdoc / assistant / associate / full professor"
 
 self_check_all_overview <- 
     self_check_all %>%
     mutate(Month=substring(self_check_all$RecordedDate,1,7)) %>%
     mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
-                                Q2.4 == "Postdoc / assistant / associate / 
-                                full professor",
+                                Q2.4 == professors,
                               "Staff","Student")) %>%
     group_by(Q2.6,Position,Month)%>%
     right_join(departments) %>%
@@ -93,10 +104,10 @@ self_check_all_overview <-
     arrange(Position,Month) 
 
 
-#
+##
 num_months = 12
 
-#an overview table with number of self checks for each department
+##an overview table with number of self checks for each department
 staff_overview_lastmonths <- self_check_all_overview %>%
     filter(Position=="Staff") %>%
     select(-Position) %>%
@@ -107,7 +118,7 @@ staff_overview_lastmonths <- self_check_all_overview %>%
 
 
 
-#an overview table with number of self checks for each department
+##an overview table with number of self checks for each department
 students_overview_lastmonths <- self_check_all_overview %>%
     filter(Position=="Student") %>%
     select(-Position) %>%
@@ -116,7 +127,7 @@ students_overview_lastmonths <- self_check_all_overview %>%
     bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
 
 
-#plot total self-checks by staff
+##plot total self-checks by staff
 plot_staff <- self_check_all_overview %>%
     filter(Department=="Total") %>%
     filter(Position=="Staff") %>%
@@ -126,7 +137,7 @@ plot_staff <- self_check_all_overview %>%
         theme(axis.text.x = element_text(angle = 90)) +
         ggtitle("Number of completed self-checks by staff and PhD candidates")
 
-#plot total self-checks by staff, per department
+##plot total self-checks by staff, per department
 plot_staff_department <- self_check_all_overview %>%
     filter(Department!="Total") %>%
     filter(Position=="Staff") %>%
@@ -140,7 +151,7 @@ plot_staff_department <- self_check_all_overview %>%
         theme(axis.text.x = element_text(angle = 90)) +
         ggtitle("Number of completed self-checks by staff and PhD candidates")
 
-#plot total self-checks by students
+##plot total self-checks by students
 plot_students <- self_check_all_overview %>%
     filter(Department=="Total") %>%
     filter(Position=="Student") %>%
@@ -150,7 +161,7 @@ plot_students <- self_check_all_overview %>%
         theme(axis.text.x = element_text(angle = 90)) +
         ggtitle("Number of completed self-checks by students")
 
-#bar chart
+##bar chart
 plot_staff_department_bar <- self_check_all_overview %>%
     filter(Department!="Total") %>%
     filter(Position=="Staff") %>%
@@ -181,3 +192,39 @@ plot_staff_department_bar <- self_check_all_overview %>%
 
 
 
+#############################
+#Analysis of historic trends#
+#############################
+
+
+#by year
+
+self_check_all_by_year <-
+    self_check_all_overview %>% 
+    mutate(Year=substring(Month,1,4)) %>%
+    group_by(Department,Position,Year)%>%
+    summarize(N=sum(N)) %>%
+    ungroup() 
+
+total_by_year <-
+    self_check_all_by_year %>%
+    group_by(Department,Year)%>%
+    summarize(N=sum(N)) %>%
+    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
+    mutate(Total = rowSums(across(where(is.numeric))))
+
+staff_by_year <-
+    self_check_all_by_year %>%
+    #filter(Department=="Total") %>%
+    filter(Position=="Staff") %>%
+    select(-Position) %>%
+    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
+    mutate(Total = rowSums(across(where(is.numeric)))) 
+
+students_by_year <-
+    self_check_all_by_year %>%
+    #filter(Department=="Total") %>%
+    filter(Position=="Student") %>%
+    select(-Position) %>%
+    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
+    mutate(Total = rowSums(across(where(is.numeric)))) 
