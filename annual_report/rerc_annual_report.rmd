@@ -1,5 +1,5 @@
 ---
-title: "Research Ethics Review Committee Anual Report 2021"
+title: "Research Ethics Review Committee Anual Report 2021-2022"
 date: "`r Sys.Date()`"
 author: "Koen Leuveld and René Bekkers"
 output: pdf_document
@@ -76,6 +76,18 @@ kable(students_by_year,
       booktabs = T, 
       longtable=F,
       caption="Number of completed checks by students",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE)
+
+```
+
+
+```{r echo=FALSE}
+kable(students_20_21,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks by students in academic year 2020-2021",
       position="h") %>%
 kable_styling(latex_options = "striped") %>%
 row_spec(5,hline_after=TRUE)

@@ -196,12 +196,17 @@ plot_staff_department_bar <- self_check_all_overview %>%
 #Analysis of historic trends#
 #############################
 
+#this is currently only included in the annual report
 
 #by year
 
 self_check_all_by_year <-
     self_check_all_overview %>% 
-    mutate(Year=substring(Month,1,4)) %>%
+    mutate(Year0=as.numeric(substring(Month,1,4))) %>%
+    mutate(Month_new=as.numeric(substring(Month,6,7))) %>%
+    mutate(Year1 = ifelse(Month_new >= 9, Year0, Year0 - 1)) %>%
+    mutate(Year2 = ifelse(Month_new >= 9, Year0 + 1, Year0)) %>%
+    mutate(Year=paste(Year1,Year2,sep="_")) %>%
     group_by(Department,Position,Year)%>%
     summarize(N=sum(N)) %>%
     ungroup() 
@@ -221,6 +226,8 @@ staff_by_year <-
     pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
     mutate(Total = rowSums(across(where(is.numeric)))) 
 
+
+
 students_by_year <-
     self_check_all_by_year %>%
     #filter(Department=="Total") %>%
@@ -228,3 +235,21 @@ students_by_year <-
     select(-Position) %>%
     pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
     mutate(Total = rowSums(across(where(is.numeric)))) 
+
+
+
+student_numbers = tibble(Department=c("COM","ORG","B&P","SCA","SOC"),
+                             Students = c(106,293,186,41,45)) %>%
+                  bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
+
+students_20_21 <-
+    self_check_all_by_year %>%
+    filter(Year=="2020_2021") %>%
+    filter(Position=="Student") %>%
+    select(-Position) %>%
+    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
+    right_join(student_numbers) %>%
+    rename("Self-checks" = "2020_2021") %>%
+    mutate("Proportion" = paste(round((`Self-checks` /  `Students` * 100 ),digits=0),"%",sep=""))
+
+
