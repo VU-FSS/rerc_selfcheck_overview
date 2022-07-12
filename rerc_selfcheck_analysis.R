@@ -196,21 +196,19 @@ plot_staff_department_bar <- self_check_all_overview %>%
 #Analysis of historic trends#
 #############################
 
-#this is currently only included in the annual report
+#this is currently only included in the annual report. 
 
-#by year
-
+#add some variables to properly identify calendar years and academic years
 self_check_all_by_year <-
     self_check_all_overview %>% 
-    mutate(Year0=as.numeric(substring(Month,1,4))) %>%
+    mutate(Year=as.numeric(substring(Month,1,4))) %>%
     mutate(Month_new=as.numeric(substring(Month,6,7))) %>%
-    mutate(Year1 = ifelse(Month_new >= 9, Year0, Year0 - 1)) %>%
-    mutate(Year2 = ifelse(Month_new >= 9, Year0 + 1, Year0)) %>%
-    mutate(Year=paste(Year1,Year2,sep="_")) %>%
-    group_by(Department,Position,Year)%>%
-    summarize(N=sum(N)) %>%
-    ungroup() 
+    mutate(Year1 = ifelse(Month_new >= 9, Year, Year - 1)) %>%
+    mutate(Year2 = ifelse(Month_new >= 9, Year + 1, Year)) %>%
+    mutate(Academic_Year=paste(Year1,Year2,sep="-")) %>%
+    select(-Year1, -Year2, -Month_new)
 
+# a table for all self-check, by calendar year
 total_by_year <-
     self_check_all_by_year %>%
     group_by(Department,Year)%>%
@@ -218,38 +216,49 @@ total_by_year <-
     pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
     mutate(Total = rowSums(across(where(is.numeric))))
 
-staff_by_year <-
+#a table for all staff, by calendar year
+
+staff_data <- read.csv("annual_report/sep_tabellen.csv")
+
+
+staff_by_year_FTE <-
     self_check_all_by_year %>%
     #filter(Department=="Total") %>%
     filter(Position=="Staff") %>%
-    select(-Position) %>%
-    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
-    mutate(Total = rowSums(across(where(is.numeric)))) 
+    group_by(Department,Year)%>%
+    summarize(`Self-checks`=sum(N)) %>%
+    right_join(staff_data)  %>%
+    filter(Year>2017)  %>%
+    select(-Publications) %>%
+    mutate(Proportion = round(`Self-checks`/Research.Time,digits=1)) %>%
+    pivot_wider(names_from=Year, values_from=c(`Self-checks`,Research.Time,Proportion),values_fill=0,names_sort=T) %>%
+    relocate(Department,ends_with(as.character(2017:2021))) 
+
+staff_by_year_pub <-
+    self_check_all_by_year %>%
+    filter(Position=="Staff") %>%
+    group_by(Department,Year)%>%
+    summarize(`Self-checks`=sum(N)) %>%
+    right_join(staff_data)  %>%
+    filter(Year>2017)  %>%
+    select(-Research.Time) %>%
+    mutate(Proportion = round(`Self-checks`/Publications,digits=1)) %>%
+    pivot_wider(names_from=Year, values_from=c(`Self-checks`,Publications,Proportion),values_fill=0,names_sort=T) %>%
+    relocate(Department,ends_with(as.character(2017:2021))) 
+
+    #%>%
 
 
 
+
+student_data <- read.csv("annual_report/Studenten_tabellen.csv")
 students_by_year <-
     self_check_all_by_year %>%
-    #filter(Department=="Total") %>%
     filter(Position=="Student") %>%
-    select(-Position) %>%
-    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
-    mutate(Total = rowSums(across(where(is.numeric)))) 
-
-
-
-student_numbers = tibble(Department=c("COM","ORG","B&P","SCA","SOC"),
-                             Students = c(106,293,186,41,45)) %>%
-                  bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
-
-students_20_21 <-
-    self_check_all_by_year %>%
-    filter(Year=="2020_2021") %>%
-    filter(Position=="Student") %>%
-    select(-Position) %>%
-    pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
-    right_join(student_numbers) %>%
-    rename("Self-checks" = "2020_2021") %>%
-    mutate("Proportion" = paste(round((`Self-checks` /  `Students` * 100 ),digits=0),"%",sep=""))
-
-
+    group_by(Department,Academic_Year)%>%
+    summarize(`Self-checks`=sum(N)) %>%
+    right_join(student_data)  %>%
+    filter(as.numeric(substring(Academic_Year,1,4))>=2018) %>%
+    mutate("Proportion" = paste(round((`Self-checks` /  `Students` * 100 ),digits=0),"%",sep="")) %>%
+    pivot_wider(names_from=Academic_Year, values_from=c(`Self-checks`,Students,Proportion)) %>%
+    relocate(Department,ends_with(as.character(2018:2022)))

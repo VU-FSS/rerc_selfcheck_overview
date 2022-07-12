@@ -56,41 +56,64 @@ Communication Science is by far the most active user of the self-check. The tool
 
 Since the 2017-2018 academic year, RERC members have encouraged students in the master programs to use the tool. Indeed the data show that the tool is most frequently used by students in master programs. 
 
-Table 2 provides a breakdown of use by researchers alone, excluding students. We see that Communication Science remains the most active, with almost twice the numbers in the Department of Sociology and Organization Science. Social and Cultural Anthropology and Political Science and Public Administration use the self-check tool least intensively.
-
+Table 2 provides a breakdown of use by researchers alone, excluding students. Furthermore, the table includes each department's research in FTE, as provided in the SEP tables. We see that in absolute number of checks Communication Science remains the most active, with almost twice the numbers of the Departments of Political Science & Public Administration, Organization Science and Sociology. Social and Cultural Anthropology  uses the self-check tool least intensively. If we divide the number of checks by the number of FTE (the prop. columns), we see that the difference between Communication Science and Political Science & Public Administration can mostly be attributed to the amount of research time, with both having approximately twice the number of checks per FTE as Organization Science and Social and Cultural Anthropology. Sociology uses the self-check tool least intensively in relative terms.
 
 ```{r echo=FALSE}
-kable(staff_by_year,
+kable(staff_by_year_FTE,
       booktabs = T, 
       longtable=F,
-      caption="Number of completed checks excluding students",
-      position="h") %>%
+      caption="Number of completed checks excluding students and research time in FTE, by department",
+      position="h",
+      col.names = c("Dept",
+                    rep(c("Checks","FTE","Prop."),4))) %>%
 kable_styling(latex_options = "striped") %>%
-row_spec(5,hline_after=TRUE)
+#row_spec(5,hline_after=TRUE) %>%
+add_header_above(header = c(" " = 1,
+                          "2018" =3,
+                          "2019" =3,
+                          "2020" =3,
+                          "2021" =3))
 
 ```
 
+
+Table 3 is similar to Table 2, however rather than considering research inputs, it compares checks to research outputs^[The SEP tables include Refereed articles, Non-refereed articles, Books, Book chapters, PhD-theses, Professional publications, Publications general public, and Other research output. The numbers reported here are a sum of these outputs], again obtained from the SEP tables. Communication Science uses the tool most intensively per research output; about twice as intensively as Political Science & Public Administration and Organization Science. Sociology and Social and Cultural Anthropology use the self-check tool least intensively.
+
+
+
+```{r echo=FALSE}
+kable(staff_by_year_pub,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks excluding students and total research outputs, by department",
+      position="h",
+      col.names = c("Dept",
+                    rep(c("Checks","Pubs","Prop."),4))) %>%
+kable_styling(latex_options = "striped") %>%
+#row_spec(5,hline_after=TRUE) %>%
+add_header_above(header = c(" " =  1,
+                          "2018" = 3,
+                          "2019" = 3,
+                          "2020" = 3,
+                          "2021" = 3))
+
+```
 
 ```{r echo=FALSE}
 kable(students_by_year,
       booktabs = T, 
       longtable=F,
-      caption="Number of completed checks by students",
-      position="h") %>%
+      caption="Number of completed checks by students and total number of master students, by department",
+      position="h",
+      col.names = c("Dept",
+                    rep(c("Checks","Stud.","Prop."),4))) %>%
 kable_styling(latex_options = "striped") %>%
-row_spec(5,hline_after=TRUE)
-
-```
-
-
-```{r echo=FALSE}
-kable(students_20_21,
-      booktabs = T, 
-      longtable=F,
-      caption="Number of completed checks by students in academic year 2020-2021",
-      position="h") %>%
-kable_styling(latex_options = "striped") %>%
-row_spec(5,hline_after=TRUE)
+#row_spec(5,hline_after=TRUE) %>%
+add_header_above(header = c(" " = 1,
+                          "2018/2019" =3,
+                          "2019/2020" =3,
+                          "2020/2021" =3,
+                          "2021/2022" =3))
 
 ```
 

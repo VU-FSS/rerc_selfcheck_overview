@@ -1,8 +1,8 @@
 Register Qualtrics Credentials.R
+data/*.csv
 check_for_name.R
 .gitignore
 *.pdf
 *.sublime-workspace
 *.sublime-project
-*.csv
 *.log
