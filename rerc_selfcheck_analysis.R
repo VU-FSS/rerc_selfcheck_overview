@@ -11,6 +11,7 @@
 #June 2022
 
 library(tidyverse)
+library(lubridate)
 
 
 #some initial variables
@@ -83,34 +84,60 @@ self_check_all <- read.csv("data/self_check_all.csv")
 #the professors string is too long to fit below
 professors <- "Postdoc / assistant / associate / full professor"
 
-self_check_all_overview <- 
+self_check_all_month <- 
     self_check_all %>%
-    mutate(Month=substring(self_check_all$RecordedDate,1,7)) %>%
+    mutate(Date = ymd_hms(RecordedDate)) %>%
+    mutate(Month = floor_date(as_date(Date), "month"))      %>%
     mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
                                 Q2.4 == professors,
                               "Staff","Student")) %>%
     group_by(Q2.6,Position,Month)%>%
     right_join(departments) %>%
-    select(-Q2.6) %>%
     relocate(Department = Dept) %>%
     group_by(Department,Position,Month)%>%
     summarize(N=n()) %>%
+
     #pivoting back and forths allows us to have rows even if there's no
     #self-checks in that month, and easily compute totals
+    #tidyverse's complete() function may be a better choice
     pivot_wider(names_from=Department, values_from=N,values_fill=0) %>%
     mutate(Total = rowSums(across(where(is.numeric)))) %>%
     pivot_longer(!c(Position,Month),names_to="Department", values_to="N") %>%
     ungroup() %>%
-    arrange(Position,Month) 
+ 
+    #year
+    mutate(Year = year(Month)) %>%
+
+    #quarter
+    mutate(Quarter = paste(year(Month),
+                           ceiling(month(Month)/3),
+                           sep="-")) %>%
+
+    #academic year
+    mutate(sept = ifelse(month(Month)>=9,0,1)) %>%
+    mutate(Academic_Year = year(Month) - sept ) %>%
+    mutate(Academic_Year = paste(Academic_Year,Academic_Year+1,sep="-")) %>%
+    select(-sept)  %>%
+
+    #month
+    mutate(Month=paste(Year,
+                       str_pad(month(Month),2,pad="0"),
+                       sep="-")) %>% 
+
+    #clean up
+    arrange(Position,Month,Department) %>%
+    relocate(Academic_Year,Year,Quarter,Month)   
+
+    
 
 
 ##
 num_months = 12
 
 ##an overview table with number of self checks for each department
-staff_overview_lastmonths <- self_check_all_overview %>%
+staff_overview_lastmonths <- self_check_all_month %>%
     filter(Position=="Staff") %>%
-    select(-Position) %>%
+    select(-Year,-Position,-Academic_Year,-Quarter) %>%
     slice_tail(n=6*num_months) %>%
     pivot_wider(names_from=Department, values_from=N,values_fill=0) %>%
     bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
@@ -119,16 +146,16 @@ staff_overview_lastmonths <- self_check_all_overview %>%
 
 
 ##an overview table with number of self checks for each department
-students_overview_lastmonths <- self_check_all_overview %>%
+students_overview_lastmonths <- self_check_all_month %>%
     filter(Position=="Student") %>%
-    select(-Position) %>%
+    select(-Year,-Position,-Academic_Year,-Quarter) %>%
     slice_tail(n=6*num_months) %>%
     pivot_wider(names_from=Department, values_from=N,values_fill=0) %>%
     bind_rows(summarise_all(., ~if(is.numeric(.)) sum(.) else "Total"))
 
 
 ##plot total self-checks by staff
-plot_staff <- self_check_all_overview %>%
+plot_staff <- self_check_all_month %>%
     filter(Department=="Total") %>%
     filter(Position=="Staff") %>%
     ggplot(data=., aes(x=Month, y=N, group=1)) +
@@ -138,7 +165,7 @@ plot_staff <- self_check_all_overview %>%
         ggtitle("Number of completed self-checks by staff and PhD candidates")
 
 ##plot total self-checks by staff, per department
-plot_staff_department <- self_check_all_overview %>%
+plot_staff_department <- self_check_all_month %>%
     filter(Department!="Total") %>%
     filter(Position=="Staff") %>%
     ggplot(data=., aes(x=Month, y=N, group=Department)) +
@@ -152,7 +179,7 @@ plot_staff_department <- self_check_all_overview %>%
         ggtitle("Number of completed self-checks by staff and PhD candidates")
 
 ##plot total self-checks by students
-plot_students <- self_check_all_overview %>%
+plot_students <- self_check_all_month %>%
     filter(Department=="Total") %>%
     filter(Position=="Student") %>%
     ggplot(data=., aes(x=Month, y=N, group=1)) +
@@ -162,14 +189,9 @@ plot_students <- self_check_all_overview %>%
         ggtitle("Number of completed self-checks by students")
 
 ##bar chart
-plot_staff_department_bar <- self_check_all_overview %>%
+plot_staff_department_bar <- self_check_all_month %>%
     filter(Department!="Total") %>%
     filter(Position=="Staff") %>%
-    mutate(Quarter=str_sub(Month,start=-2)) %>%
-    mutate(Quarter=ceiling(as.numeric(Quarter)/ 3)) %>%
-    mutate(Quarter = paste(str_sub(Month,1,4),
-                           Quarter,sep="-", 
-                           collapse=NULL)) %>%
     group_by(Department,Quarter) %>%
     summarize(N=sum(N))   %>% 
     ggplot(data=., aes(x=Quarter, y=N, group=Department,, fill=Department)) +
@@ -197,32 +219,22 @@ plot_staff_department_bar <- self_check_all_overview %>%
 #############################
 
 #this is currently only included in the annual report. 
-
-#add some variables to properly identify calendar years and academic years
-self_check_all_by_year <-
-    self_check_all_overview %>% 
-    mutate(Year=as.numeric(substring(Month,1,4))) %>%
-    mutate(Month_new=as.numeric(substring(Month,6,7))) %>%
-    mutate(Year1 = ifelse(Month_new >= 9, Year, Year - 1)) %>%
-    mutate(Year2 = ifelse(Month_new >= 9, Year + 1, Year)) %>%
-    mutate(Academic_Year=paste(Year1,Year2,sep="-")) %>%
-    select(-Year1, -Year2, -Month_new)
-
 # a table for all self-check, by calendar year
 total_by_year <-
-    self_check_all_by_year %>%
+    self_check_all_month %>%
     group_by(Department,Year)%>%
     summarize(N=sum(N)) %>%
     pivot_wider(names_from=Year, values_from=N,values_fill=0) %>%
     mutate(Total = rowSums(across(where(is.numeric))))
 
-#a table for all staff, by calendar year
+##two tables for all staff, by calendar year
 
+##load the Sep tables, provided by Rob    
 staff_data <- read.csv("annual_report/sep_tabellen.csv")
 
-
+##compare self-checks with input
 staff_by_year_FTE <-
-    self_check_all_by_year %>%
+    self_check_all_month %>%
     #filter(Department=="Total") %>%
     filter(Position=="Staff") %>%
     group_by(Department,Year)%>%
@@ -231,11 +243,16 @@ staff_by_year_FTE <-
     filter(Year>2017)  %>%
     select(-Publications) %>%
     mutate(Proportion = round(`Self-checks`/Research.Time,digits=1)) %>%
-    pivot_wider(names_from=Year, values_from=c(`Self-checks`,Research.Time,Proportion),values_fill=0,names_sort=T) %>%
+    pivot_wider(names_from=Year, 
+                values_from=c(`Self-checks`,
+                              Research.Time,
+                              Proportion),
+                values_fill=0,names_sort=T) %>%
     relocate(Department,ends_with(as.character(2017:2021))) 
 
+##compare self-checks with output (publications)
 staff_by_year_pub <-
-    self_check_all_by_year %>%
+    self_check_all_month %>%
     filter(Position=="Staff") %>%
     group_by(Department,Year)%>%
     summarize(`Self-checks`=sum(N)) %>%
@@ -243,22 +260,27 @@ staff_by_year_pub <-
     filter(Year>2017)  %>%
     select(-Research.Time) %>%
     mutate(Proportion = round(`Self-checks`/Publications,digits=1)) %>%
-    pivot_wider(names_from=Year, values_from=c(`Self-checks`,Publications,Proportion),values_fill=0,names_sort=T) %>%
+    pivot_wider(names_from=Year,
+                values_from=c(`Self-checks`,
+                              Publications,
+                              Proportion),
+                values_fill=0,names_sort=T) %>%
     relocate(Department,ends_with(as.character(2017:2021))) 
 
-    #%>%
-
-
-
-
+##Students
 student_data <- read.csv("annual_report/Studenten_tabellen.csv")
 students_by_year <-
-    self_check_all_by_year %>%
+    self_check_all_month %>%
     filter(Position=="Student") %>%
     group_by(Department,Academic_Year)%>%
     summarize(`Self-checks`=sum(N)) %>%
     right_join(student_data)  %>%
     filter(as.numeric(substring(Academic_Year,1,4))>=2018) %>%
-    mutate("Proportion" = paste(round((`Self-checks` /  `Students` * 100 ),digits=0),"%",sep="")) %>%
-    pivot_wider(names_from=Academic_Year, values_from=c(`Self-checks`,Students,Proportion)) %>%
+    mutate("Proportion" = paste(round((`Self-checks` /  `Students` * 100 ),
+                                      digits=0),
+                                "%",
+                                sep="")) %>%
+    pivot_wider(names_from=Academic_Year,
+                values_from=c(`Self-checks`,
+                              Students,Proportion)) %>%
     relocate(Department,ends_with(as.character(2018:2022)))
