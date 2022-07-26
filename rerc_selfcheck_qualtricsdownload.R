@@ -47,3 +47,15 @@ self_check_new_raw <- fetch_survey(surveyID = surveys$id[1],
 self_check_new <- self_check_new_raw[self_check_new_raw$Finished,]
 write.csv(self_check_new,"data/self_check_new.csv", row.names = TRUE)
 
+
+
+#
+full_review_all_raw <- fetch_survey(surveyID = surveys$id[2], 
+                        start_date = "1900-01-01",
+                        end_date = "2100-12-31",
+                        verbose = TRUE,
+                        force_request=TRUE)
+
+full_review_all <- full_review_all_raw[full_review_all_raw$Finished,]
+write.csv(full_review_all,"data/full_review.csv", row.names = TRUE)
+

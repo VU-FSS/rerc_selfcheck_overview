@@ -124,20 +124,31 @@ self_check_all_month <-
     arrange(Position,Month,Department) %>%
     relocate(Academic_Year,Year,Quarter,Month)   
 
-    
+#full review data
+full_review <-
+    read_csv("data/full_review.csv") %>%
+    right_join(departments,by = c("Q8" = "Q2.6")) %>%
+    mutate(Date = ymd_hms(RecordedDate)) %>%
+    mutate(Year = year(Date)) %>%
+    relocate(Department = Dept) %>%
+    group_by(Department, Year) %>%
+    summarize(N=n()) %>% 
+    relocate(Year,Department,N) 
 
-## function to create tables
-table_by_period <- function(position=NULL,
-                            period,
-                            num_periods,
-                            join=NULL,
-                            cols="Department",
-                            dept_total=TRUE,
-                            period_total=TRUE,
-                            prop_col=FALSE) {
-    
 
-    df <- self_check_all_month 
+## function to create tables with total number of checks per deparment per time period
+## There is no error checking!!
+table_by_period <- function(data,
+                            position=NULL, #Student or Staff. NULL for total
+                            period, #over which data will be summed
+                            num_periods, #last N periods will be included
+                            join=NULL, #data frame that adds one column to <PERIOD>, Department
+                            cols="Department", #either departments or <PERIOD> can be used as column
+                            dept_total=TRUE, #add a column/row with totals by deparment
+                            period_total=TRUE, #add a column/row with totals by period
+                            prop_col=FALSE) { #add a column with proportion of checks/joined data
+
+    df <- data 
 
     #filter position
     if (!is.null(position)) {
@@ -145,7 +156,6 @@ table_by_period <- function(position=NULL,
         df %>% 
         filter(Position==position) 
     }
-
 
     #sum to period
     df <-
@@ -161,7 +171,6 @@ table_by_period <- function(position=NULL,
             df %>%
             right_join(join) 
     }
-
 
     #select relevant periods, and ensure period is encoded as char (needed later)
     df <-
@@ -181,7 +190,6 @@ table_by_period <- function(position=NULL,
                         across(Department, ~"Total"))) 
     }
 
-
     #generate totals by dept 
     if (dept_total){ 
         df <-
@@ -193,7 +201,6 @@ table_by_period <- function(position=NULL,
 
             arrange(across(matches(period))) 
     }
-    
     
     #compute proportions
     if (prop_col){ 
@@ -217,32 +224,41 @@ table_by_period <- function(position=NULL,
 }
 
 #tables for monthly report
-staff_overview_lastmonths <-  table_by_period("Staff","Month",12)
-students_overview_lastmonths <- table_by_period("Student","Month",12)
-
-
+staff_overview_lastmonths <-  table_by_period(data=self_check_all_month,
+                                              position="Staff",
+                                              period="Month",
+                                              num_period=12)
+students_overview_lastmonths <- table_by_period(data=self_check_all_month,
+                                              position="Student",
+                                              period="Month",
+                                              num_period=12)
 
 #tables for the annual report
 staff_data <- read.csv("annual_report/sep_tabellen.csv")
 student_data <- read.csv("annual_report/Studenten_tabellen.csv")
 
 
-total_by_year <- table_by_period(period = "Year",
-                                  num_periods=6,
-                                  cols="Year")
+#tables for the annual report
+
+members <- read_csv("annual_report/Term_limits.csv")
 
 
-# A tibble: 6 x 13m, -2018 -2021
-staff_by_year_FTE <-  table_by_period(position="Staff",
-                                      period="Year",
-                                      num_periods=4,
-                                      join=staff_data[-3],
-                                      cols="Year",
-                                      dept_total=FALSE,
-                                      prop_col=TRUE)
+total_by_year <- table_by_period(data=self_check_all_month,
+                                 period = "Year",
+                                 num_periods=6,
+                                 cols="Year")
 
+staff_by_year_FTE <- table_by_period(data=self_check_all_month,
+                                     position="Staff",
+                                     period="Year",
+                                     num_periods=4,
+                                     join=staff_data[-3],
+                                     cols="Year",
+                                     dept_total=FALSE,
+                                     prop_col=TRUE)
 
-staff_by_year_pub <-  table_by_period(position="Staff",
+staff_by_year_pub <-  table_by_period(data=self_check_all_month,
+                                      position="Staff",
                                       period="Year",
                                       num_periods=4,
                                       join=staff_data[-4],
@@ -250,56 +266,87 @@ staff_by_year_pub <-  table_by_period(position="Staff",
                                       dept_total=FALSE,
                                       prop_col=TRUE)
 
-students_by_year <-  table_by_period(position="Student",
-                                      period="Academic_Year",
-                                      num_periods=4,
-                                      join=student_data,
-                                      cols="Academic_Year",
-                                      dept_total=FALSE,
-                                      prop_col=TRUE)
+students_by_year <-  table_by_period(data=self_check_all_month,
+                                     position="Student",
+                                     period="Academic_Year",
+                                     num_periods=4,
+                                     join=student_data,
+                                     cols="Academic_Year",
+                                     dept_total=FALSE,
+                                     prop_col=TRUE)
+
+full_review_by_year <- table_by_period(data=full_review,
+                                       period = "Year",
+                                       num_periods=6,
+                                       cols="Year")
+
+
 
 ## function to create line graphs
-plot_numbers <- function(position,title) {
+plot_numbers <- function(data,
+                         position=NULL,
+                         period,
+                         group,
+                         type="line",
+                         smooth=TRUE,
+                         title="") {
 
+    #prepare data
+    df <- data
+
+    if (!is.null(position)) {
+        df <-
+            df %>%
+            filter(Position==position)
+    }
+
+    df <-
+
+        df %>%
+        select(!!period,!!group,N) %>%        
+        group_by(across(-N)) %>%
+        summarize(N=sum(N))
+
+    #plot
     plot <-
-        self_check_all_month %>%
-        filter(Position==position) %>%
-        group_by(Month) %>%
-        summarize(N=sum(N))     %>%
-        ggplot(data=., aes(x=Month, y=N, group=1)) +
-            geom_line() +
-            geom_smooth(method="loess",formula = y ~ x,se=FALSE) +
-            theme(axis.text.x = element_text(angle = 90)) +
-            ggtitle(title)
+        df %>% 
+        ggplot(aes(x=.[[period]], y=N, group=.[[group]],color=.[[group]],fill=.[[group]]))
 
+    if (type=="line") {
+        plot <- plot +
+            geom_line()
+    } else {
+        plot <- plot +
+            geom_bar(stat="identity",color="black", position=position_dodge())
+    }
+
+    if (smooth) {
+    plot <- plot +          
+            geom_smooth(method="loess",formula = y ~ x,se=FALSE)
+    }
+    
+    plot <- plot +
+            theme(axis.text.x = element_text(angle = 90)) +
+            labs(color = group, fill=group) +
+            xlab(period) +
+            ggtitle(title) %>% 
     return(plot)
 }
 
 
 
-plot_staff <- plot_numbers("Staff","Number of completed self-checks by staff and PhD candidates")
-plot_students <- plot_numbers("Student","Number of completed self-checks by students")
+plot_all <- plot_numbers(data = self_check_all_month,
+                         period = "Month",
+                         group = "Position",
+                         title="Number of completed self-checks by staff and students")
 
-##bar chart
-plot_staff_department_bar <- self_check_all_month %>%
-    filter(Position=="Staff") %>%
-    group_by(Department,Quarter) %>%
-    summarize(N=sum(N))   %>% 
-    ggplot(data=., aes(x=Quarter, y=N, group=Department,, fill=Department)) +
-        geom_bar(stat="identity", color="black", position=position_dodge())+
-        geom_smooth(method="loess",
-                    formula = y ~ x,
-                    se=FALSE,
-                    aes(color=Department,linetype=Department)) +
-        theme_minimal() +
-        theme(axis.text.x = element_text(angle = 90),
-            legend.position="bottom",
-            legend.title = element_text(size=8),
-            legend.text = element_text(size=8),
-            legend.key.height= unit(0.4, 'cm'),
-            legend.key.width= unit(0.4, 'cm'),
-            legend.box="horizontal") +
-        guides(fill=guide_legend(nrow=2,byrow=TRUE))+
-        ggtitle("Number of completed self-checks by staff and PhD candidates 
-                by department")
+
+plot_bar <- plot_numbers(data = self_check_all_month,
+                         period = "Year",
+                         position="Staff",
+                         type="bar",
+                         smooth=FALSE,
+                         group = "Department",
+                         title="Number of completed self-checks by staff")
+
 
