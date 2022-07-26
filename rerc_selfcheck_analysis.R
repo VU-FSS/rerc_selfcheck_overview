@@ -198,7 +198,6 @@ table_by_period <- function(data,
             bind_rows(summarise(.,
                             across(where(is.numeric),sum),
                             across(where(is.character), ~"Total"))) %>%
-
             arrange(across(matches(period))) 
     }
     

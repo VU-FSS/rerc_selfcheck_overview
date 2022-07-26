@@ -37,12 +37,30 @@ source("rerc_selfcheck_analysis.r")
 
 
 
+# Introduction
+This memo reports research ethics review activities at the Faculty of Social Sciences at Vrije Universiteit Amsterdam. Since 2016 the RERC has reviewed ethics issues of research by faculty members. The report gives an overview of the members of the RERC, the self-checks done by faculty members and students, and of the applications for full review. 
 
-This memo reports research ethics review activities at the Faculty of Social Sciences at Vrije Universiteit Amsterdam. Since 2016 the RERC has reviewed ethics issues of research by faculty members. Since 2017 the RERC provides an online self-check tool that researchers and students can use to screen their research plans for ethics issues. The analysis below is based on data entered in the self-check and full application surveys.
 
-Since its inception, the self-check tool has been used more than 1700 times. Table 1 provides a breakdown of the use of the tool by FSS department.
+# Membership Composition
+The RERC consists of five members, one from each department of the Faculty. The RERC is supported by a secretary supplied by the Research Support Office. The members, and the dates by which their appointments end, are listed in Table 1. Members meet on a monthly basis to discuss ethics issues and policies within the faculty.
 
-```{r echo=FALSE}
+```{r,  echo=FALSE}
+kable(members,
+      booktabs = T, 
+      longtable=F,
+      caption="Composition of the RERC",
+      position="h") %>%
+kable_styling(latex_options = "striped")
+```
+
+
+
+# Self-check
+Since 2017 the RERC provides an online self-check tool that researchers and students can use to screen their research plans for ethics issues. The analysis below is based on data entered in the self-check and full application surveys.
+
+Since its inception, the self-check tool has been used more than 1,700 times. Table 2 provides a breakdown of the use of the tool by FSS department.
+
+```{r total_by_year,  echo=FALSE}
 kable(total_by_year,
       booktabs = T, 
       longtable=F,
@@ -56,9 +74,9 @@ Communication Science is by far the most active user of the self-check. The tool
 
 Since the 2017-2018 academic year, RERC members have encouraged students in the master programs to use the tool. Indeed the data show that the tool is most frequently used by students in master programs. 
 
-Table 2 provides a breakdown of use by researchers alone, excluding students. Furthermore, the table includes each department's research in FTE, as provided in the SEP tables. We see that in absolute number of checks Communication Science remains the most active, with almost twice the numbers of the Departments of Political Science & Public Administration, Organization Science and Sociology. Social and Cultural Anthropology  uses the self-check tool least intensively. If we divide the number of checks by the number of FTE (the prop. columns), we see that the difference between Communication Science and Political Science & Public Administration can mostly be attributed to the amount of research time, with both having approximately twice the number of checks per FTE as Organization Science and Social and Cultural Anthropology. Sociology uses the self-check tool least intensively in relative terms.
+Table 3 provides a breakdown of use by researchers alone, excluding students. Furthermore, the table includes each department's research input in FTE, as provided in the SEP tables. We see that in absolute number of checks Communication Science remains the most active, with almost twice the numbers of the Departments of Political Science & Public Administration, Organization Science and Sociology. Social and Cultural Anthropology  uses the self-check tool least intensively. If we divide the number of checks by the number of FTE (the prop. columns), we see that the difference between Communication Science and Political Science & Public Administration can mostly be attributed to the amount of research time, with both having approximately twice the number of checks per FTE as Organization Science and Social and Cultural Anthropology. Sociology uses the self-check tool least intensively in relative terms.
 
-```{r echo=FALSE}
+```{r, echo=FALSE}
 kable(staff_by_year_FTE,
       booktabs = T, 
       longtable=F,
@@ -77,7 +95,7 @@ add_header_above(header = c(" " = 1,
 ```
 
 
-Table 3 is similar to Table 2, however rather than considering research inputs, it compares checks to research outputs^[The SEP tables include Refereed articles, Non-refereed articles, Books, Book chapters, PhD-theses, Professional publications, Publications general public, and Other research output. The numbers reported here are a sum of these outputs], again obtained from the SEP tables. Communication Science uses the tool most intensively per research output; about twice as intensively as Political Science & Public Administration and Organization Science. Sociology and Social and Cultural Anthropology use the self-check tool least intensively.
+Table 4 is similar to Table 3, however rather than considering research inputs, it compares checks to research outputs^[The SEP tables include Refereed articles, Non-refereed articles, Books, Book chapters, PhD-theses, Professional publications, Publications general public, and Other research output. The numbers reported here are a sum of these outputs], again obtained from the SEP tables. Communication Science uses the tool most intensively per research output; about twice as intensively as Political Science & Public Administration and Organization Science. Sociology and Social and Cultural Anthropology use the self-check tool least intensively.
 
 
 
@@ -99,6 +117,9 @@ add_header_above(header = c(" " =  1,
 
 ```
 
+Table 5 compares the numbers of students in the programs from each department to the numbers of self-checks done. Overall, the proportion of checks done per student has risen considerably over the four years considered: from 0.2 to 0.7. In some departments, the propotion now exceeds one. This is due to students performing multiple self-checks. This is encouraged, as one motivation behind the self-check is to encourage people to change their research design to avoid ethics issues. The adapted research must then be subjected to a new self-check. Interestingly, the proportion of check among staff does not seem to correlate strongly with the numbers done by students. SCA and SOC have low proportions of checks among staff, but very high proportions among students.
+
+
 ```{r echo=FALSE}
 kable(students_by_year,
       booktabs = T, 
@@ -119,5 +140,17 @@ add_header_above(header = c(" " = 1,
 
 
 
+# Full Review
+
+If the self-check reveals potential ethics issues, these are then discussed with the relevant department's representative in the RERC. If the ethics issues are serious enough, the RERC can advice to do a full review of the study. Table 6 shows the total number of applications for full review done through the Qualtrics Form. A number of these are not reviewed, since they concern applications by Master students, which the RERC does not review.
 
 
+```{r echo=FALSE}
+kable(full_review_by_year,
+      booktabs = T, 
+      longtable=F,
+      caption="Number of applications for full review per department",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE)
+```
