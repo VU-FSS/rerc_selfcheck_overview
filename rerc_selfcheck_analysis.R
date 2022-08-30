@@ -12,7 +12,7 @@
 
 library(tidyverse)
 library(lubridate)
-
+library(pander)
 
 #some initial variables
 departments = data.frame(Q2.6 = c("Communication Science",
@@ -20,13 +20,13 @@ departments = data.frame(Q2.6 = c("Communication Science",
                                   "Public Administration and Political Science",
                                   "Social and Cultural Anthropology",
                                   "Sociology"),
-                         Dept=c("COM","ORG","B&P","SCA","SOC"))
+                         Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
 #################################
 #analysis of recent applications#
 #################################
 
-self_check <- read.csv("data/self_check_new.csv")
+self_check <- read_csv("data/self_check_new.csv")
 
 
 
@@ -79,7 +79,7 @@ students_overview <-    self_check %>%
 #############################
 
 ##Data Prep
-self_check_all <- read.csv("data/self_check_all.csv")
+self_check_all <- read_csv("data/self_check_all.csv")
 
 #the professors string is too long to fit below
 professors <- "Postdoc / assistant / associate / full professor"
@@ -96,7 +96,6 @@ self_check_all_month <-
     relocate(Department = Dept) %>%
     #mutate(Department = as_factor(Department),Position = as_factor(Position)) %>%
     group_by(Department,Position,Month)%>%
-
     summarize(N=n()) %>%
     ungroup() %>%
     complete(Department,Position,Month,fill=list(N=0)) %>%
@@ -138,15 +137,16 @@ full_review <-
 
 ## function to create tables with total number of checks per deparment per time period
 ## There is no error checking!!
-table_by_period <- function(data,
-                            position=NULL, #Student or Staff. NULL for total
-                            period, #over which data will be summed
-                            num_periods, #last N periods will be included
-                            join=NULL, #data frame that adds one column to <PERIOD>, Department
-                            cols="Department", #either departments or <PERIOD> can be used as column
-                            dept_total=TRUE, #add a column/row with totals by deparment
-                            period_total=TRUE, #add a column/row with totals by period
-                            prop_col=FALSE) { #add a column with proportion of checks/joined data
+table_by_period <- 
+    function(data,
+             position=NULL, #Student or Staff. NULL for total
+             period, #column in data over which data will be summed
+             num_periods, #last N periods will be included
+             join=NULL, #data frame that adds one column to <PERIOD>, Department
+             cols="Department", #either departments or <PERIOD> can be used as column
+             dept_total=TRUE, #add a column/row with totals by deparment
+             period_total=TRUE, #add a column/row with totals by period
+             prop_col=FALSE) { #add a column with proportion of checks/joined data
 
     df <- data 
 
@@ -157,11 +157,11 @@ table_by_period <- function(data,
         filter(Position==position) 
     }
 
-    #sum to period
+    #collapse to one line per period per Department
     df <-
         df %>%
-        select(!!period,Department,N) %>%        
-        group_by(across(-N)) %>%
+        select(.data[[period]],Department,N) %>%        
+        group_by(.data[[period]],Department) %>%
         summarize(N=sum(N)) %>%
         ungroup()
 
@@ -175,10 +175,10 @@ table_by_period <- function(data,
     #select relevant periods, and ensure period is encoded as char (needed later)
     df <-
         df %>%
-        arrange(across(matches(period))) %>%
+        arrange(.data[[period]]) %>%
         slice_tail(n=5*num_periods) %>%
         ungroup() %>%
-        mutate(across(1,~as.character(.x)))
+        mutate(across(matches(period),as.character))
 
     #generate totals by period
     if (period_total){
@@ -186,8 +186,8 @@ table_by_period <- function(data,
         df %>%
         group_by(across(matches(period))) %>%
         bind_rows(summarise(.,
-                        across(where(is.numeric),sum),
-                        across(Department, ~"Total"))) 
+                            across(where(is.numeric),sum),
+                            across(Department, ~"Total"))) 
     }
 
     #generate totals by dept 
@@ -196,9 +196,9 @@ table_by_period <- function(data,
             df %>%     
             group_by(Department) %>%
             bind_rows(summarise(.,
-                            across(where(is.numeric),sum),
-                            across(where(is.character), ~"Total"))) %>%
-            arrange(across(matches(period))) 
+                                across(where(is.numeric),sum),
+                                across(matches(period), ~"Total"))) %>%
+            arrange(.data[[period]]) 
     }
     
     #compute proportions
@@ -206,7 +206,7 @@ table_by_period <- function(data,
         df <-
             df %>% 
             ungroup() %>%
-            mutate(Proportion = round(df[,3]/df[,4],digits=1))
+            mutate(Percent = round((.[,3]/.[,4]) * 100,digits=0))
     }
 
     #pivot
@@ -219,7 +219,6 @@ table_by_period <- function(data,
     
     print(df)
     return(df)
-
 }
 
 #tables for monthly report
@@ -240,6 +239,8 @@ student_data <- read.csv("annual_report/Studenten_tabellen.csv")
 #tables for the annual report
 
 members <- read_csv("annual_report/Term_limits.csv")
+
+
 
 
 total_by_year <- table_by_period(data=self_check_all_month,
@@ -279,6 +280,20 @@ full_review_by_year <- table_by_period(data=full_review,
                                        num_periods=6,
                                        cols="Year")
 
+self_check_all_year <- 
+    self_check_all_month %>%
+    group_by(Department,Year) %>%
+    summarize(Checks = sum(N))
+
+
+full_review_vs_selfcheck <-  table_by_period(data=full_review,
+                                     period="Year",
+                                     num_periods=4,
+                                     join=self_check_all_year,
+                                     cols="Year",
+                                     dept_total=FALSE,
+                                     prop_col=TRUE)
+
 
 
 ## function to create line graphs
@@ -309,8 +324,8 @@ plot_numbers <- function(data,
     #plot
     plot <-
         df %>% 
-        ggplot(aes(x=.[[period]], y=N, group=.[[group]],color=.[[group]],fill=.[[group]]))
-
+        ggplot(aes_string(x=period, y="N", group=group,color=group,fill=group))
+    
     if (type=="line") {
         plot <- plot +
             geom_line()
@@ -326,8 +341,6 @@ plot_numbers <- function(data,
     
     plot <- plot +
             theme(axis.text.x = element_text(angle = 90)) +
-            labs(color = group, fill=group) +
-            xlab(period) +
             ggtitle(title) %>% 
     return(plot)
 }
@@ -336,7 +349,7 @@ plot_numbers <- function(data,
 
 plot_all <- plot_numbers(data = self_check_all_month,
                          period = "Month",
-                         group = "Position",
+                         group="Position",
                          title="Number of completed self-checks by staff and students")
 
 
