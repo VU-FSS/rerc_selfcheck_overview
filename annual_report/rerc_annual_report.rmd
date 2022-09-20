@@ -33,6 +33,8 @@ if (download_data) {
 
 #analyze
 source("rerc_selfcheck_analysis.r")
+
+
 ```
 
 
@@ -90,6 +92,8 @@ kable(staff_by_year_FTE,
       longtable=F,
       caption="Number of completed checks excluding students and research time in FTE, by department",
       position="h",
+      align = c("l",
+                    rep(c("r","r","r"),4)),
       col.names = c("Dept",
                     rep(c("Chcks","FTE","%"),4))) %>%
 kable_styling(latex_options = "striped") %>%
@@ -112,6 +116,8 @@ kable(staff_by_year_pub,
       longtable=F,
       caption="Number of completed checks excluding students and total research outputs, by department",
       position="h",
+      align = c("l",
+                    rep(c("r","r","r"),4)),
       col.names = c("Dept",
                     rep(c("Chcks","Pubs","%"),4))) %>%
 kable_styling(latex_options = "striped") %>%
@@ -133,6 +139,8 @@ kable(students_by_year,
       longtable=F,
       caption="Number of completed checks by students and total number of master students, by department",
       position="h",
+      align = c("l",
+                    rep(c("r","r","r"),4)),
       col.names = c("Dept",
                     rep(c("Chcks","Stud.","%"),4))) %>%
 kable_styling(latex_options = "striped") %>%
@@ -149,29 +157,7 @@ add_header_above(header = c(" " = 1,
 
 # Full Review
 
-If the self-check reveals potential ethics issues, these are then discussed with the relevant department's representative in the RERC. If the ethics issues are serious enough, researchers should request a full review of the study. Table 6 shows the total number of applications for full review done through the Qualtrics Form^[The full review qualtrics form can be found here:https://vuass.eu.qualtrics.com/jfe/form/SV_9tBjPqFq6bxv2Sx]. A number of these are not reviewed, since they concern applications by Master students, which the RERC does not review.
-
-
-```{r echo=FALSE}
-kable(full_review_by_year,
-      booktabs = T, 
-      longtable=F,
-      caption="Number of applications for full review per department",
-      position="h") %>%
-kable_styling(latex_options = "striped") %>%
-row_spec(5,hline_after=TRUE)
-```
-# Website and outreach activities
-The RERC provides all materials researchers need for ethics review through its website^[The RERC website can be found here: https://vu.nl/en/employee/social-sciences-getting-started/research-ethics-review-fss]. In 2021 the committee revised the website to clarify the procedure, particularly for students and PhD candidates, and improved the self-check questionnaire to enable researchers working with secondary data to complete the self-check. The self-check also provides clearer guidance on the next steps researchers should take in order to ensure compliance with relevant policies.
-
-# Looking ahead
-For the 2022-2023 academic year, the RERC sees three challenges:
-
-1. Further enhance the use of the self-check by researchers, particularly at departments that are not often using it.
-2. Further enhance the use of the self-check by students, particularly at departments that are not often using it.
-3. Extend the self-check and full review questionnaire to cover the use of Artificial Intelligence and particularly machine learning algorithms.
-
-
+If the self-check reveals potential ethics issues, these are then discussed with the relevant department's representative in the RERC. If the ethics issues are serious enough, researchers should request a full review of the study. Table 6 shows the total number of applications for full review done through the Qualtrics Form^[The full review qualtrics form can be found here:https://vuass.eu.qualtrics.com/jfe/form/SV_9tBjPqFq6bxv2Sx], compared with the total number of completed self-checks by department. Not all of the applications for full review will be taken into consideration by the committee, since some of them concern applications by Master students, which the RERC does not review. Overall, it is clear from the table that the numbers of full review are low, and that only a fraction of all research projects for which researchers at the faculty completed a self-check necessitated a full review.
 
 
 ```{r echo=FALSE}
@@ -180,15 +166,48 @@ kable(full_review_vs_selfcheck,
       longtable=F,
       caption="Number of Full Reviews requested and number of self-checks completed, by department",
       position="h",
+      align = c("l",
+                rep(c("r","r","r"),4)),
       col.names = c("Dept",
                     rep(c("Rev.","Chks.","%"),4))) %>%
 kable_styling(latex_options = "striped") %>%
 row_spec(5,hline_after=TRUE) %>%
 add_header_above(header = c(" " =  1,
-                          "2018" = 3,
                           "2019" = 3,
                           "2020" = 3,
-                          "2021" = 3))
+                          "2021" = 3,
+                          "2022" = 3))
 
 ```
 
+# Website and outreach activities
+The RERC provides all materials researchers need for ethics review through its website^[The RERC website can be found here: https://vu.nl/en/employee/social-sciences-getting-started/research-ethics-review-fss]. In 2021 the committee revised the website to clarify the procedure, particularly for students and PhD candidates, and improved the self-check questionnaire to enable researchers working with secondary data to complete the self-check. The self-check also provides clearer guidance on the next steps researchers should take in order to ensure compliance with relevant policies.
+
+# Policy development and other activities
+
+In 2021-2022 the committee worked to further improve the ethics review procedure. Also the committee worked to increase the knowledge among students and scientific staff about ethics review. 
+
+To promote awareness of ethics review, all PhD students at the Faculty of Social Sciences are required by the Graduate School to complete the course Research Integrity & Responsible Scholarship. The course received a commendation from the Council of Europe as a good practice for research integrity. One of the assignments in the course is that PhD students do the ethics self-check for their dissertation plans, and discuss the result of the check with their supervisors. In this way scientific staff become aware of the ethics review procedures. However, we do not reach faculty members who are not supervising PhD students. Further actions are necessary to enhance the use of the self-check by scientific staff. 
+
+To promote the use of the ethics self-check among students in master programs, members of the committee advocated including a mandatory check in programs taught by their departments. As a result, the self-check has become a mandatory element for thesis projects by master students in Social and Cultural Anthropology, Communication Science, Sociology, and for students in the Research Master Societal Resilience. In a joint BMDO/OPCO meeting, the coordinators and directors of programs taught at the faculty discussed research integrity and ethics review in bachelor and master programs. The director of education proposes to identify research integrity and ethics review as skills that programs teach and evaluate. Obstacles to achieve this goal are the difficulty of data sharing possibilities for students, and the resistance against data management and ethics review among some researchers, primarily those working with ethnographic methods. With support from the Faculty, the RERC chair has conducted interviews to summarize current practices of data sharing, and to identify ways in which researchers can be encouraged to prepare data collection in such a way that their data can be shared in a responsible manner. Together with a research assistant the RERC chair has developed a quiz on research integrity that programs can use to test knowledge on research integrity.
+
+The chair of the committee participated in meetings of the Netherlands network of ethics committees at the Faculties of Social and Behavioral Sciences (NETHICS). We'd like to share two insights from these meetings. The first insight is that most universities have more stringent procedures for ethics review than we do. Many other universities have a "no, unless" policy, requiring all research projects to have clearance from the ethics review committee before data can be collected. Instead of such a requirement we have an optional policy, relying on the individual responsibility of researchers to seek ethics advice when they need it. One result of the optional policy is that the committee does not review all research with ethics issues. The committee does not have indications that researchers at FSS are conducting harmful research. While the tables do indicate that for large proportions of publications by researchers there are no self-checks, to a large extent these publications are not likely to report about data collected at the Faculty. Surveys of FSS publications (Bekkers & Van Pelt, 2016; Doeswijk & Bekkers, 2020; Bekkers & Suijs, 2022) show that large proportions of publications at FSS are not empirical or report about data collected by others, for which ethics review has been completed elsewhere. Thus the committee proposes to keep the current optional procedure, but strive for enhanced usage of the self-check. The second insight is that other universities have streamlined the procedures for data management, privacy checks, and ethics review, which makes it easy for researchers to keep track of their administrative responsibilities. At FSS researchers have to find their way at three different websites and offices. A dashboard identifying whether administrative responsibilities have been met at various stages of the research would be helpful, for researchers and the Research Office. Thus the committee proposes that the University Library develops such a dashboard.
+
+
+# Looking ahead
+For the 2022-2023 academic year, the RERC sees three challenges:
+
+1. Further enhance the use of the self-check by researchers, particularly at departments that are not often using it.
+2. Further enhance the use of the self-check by students, particularly in programs that are not often using it.
+3. Extend the self-check and full review questionnaire to cover the use of Artificial Intelligence and particularly machine learning algorithms.
+
+
+
+
+
+# References
+Bekkers, R. & Suijs, J. (2022) Data in VU-FSS publications in 2021. 
+
+Bekkers, R. & Van Pelt, B. (2016). Data in VU-FSS publications in 2013 and 2014.
+
+Doeswijk, J. & Bekkers, R. (2020). Data in VU‐FSS publications in 2018.

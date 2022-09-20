@@ -283,8 +283,7 @@ full_review_by_year <- table_by_period(data=full_review,
 self_check_all_year <- 
     self_check_all_month %>%
     group_by(Department,Year) %>%
-    summarize(Checks = sum(N))
-
+    summarize(Checks = sum(N)) 
 
 full_review_vs_selfcheck <-  table_by_period(data=full_review,
                                      period="Year",
