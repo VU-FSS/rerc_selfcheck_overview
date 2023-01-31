@@ -70,35 +70,65 @@ kable(students_overview,
 kable_styling(latex_options = "striped") 
 
 
-months <- nrow(staff_overview_lastmonths) - 1
+#months <- nrow(staff_overview_lastmonths) - 1
 
-kable(staff_overview_lastmonths,
-		booktabs = T, 
+table_by_period(data=self_check_all_month,
+                position="Staff",
+                period="Month",
+                num_periods=12,
+                cols="Department",
+                dept_total=TRUE,
+                prop_col=FALSE) %>%
+kable(booktabs = T, 
 		longtable=F,
-		caption=paste("Number of completed checks by staff and 
-								PhD candidates in the last",
-							months,"months", sep=" ",collapse=NULL),
+		caption="Number of completed checks by staff and PhD candidates in the last 12 months",
 		position="h") %>%
 kable_styling(latex_options = "striped") %>%
-row_spec(months,hline_after=TRUE)
+row_spec(12,hline_after=TRUE)
 
-
-kable(students_overview_lastmonths, 
-		booktabs = T,
-		longtable=F ,
-		caption=paste("Number of completed checks by master students in the last",
-						  months,"months",sep=" ", collapse=NULL),
-		position="h")%>%
+table_by_period(data=self_check_all_month,
+                position="Student",
+                period="Month",
+                num_periods=12,
+                cols="Department",
+                dept_total=TRUE,
+                prop_col=FALSE) %>%
+kable(booktabs = T, 
+		longtable=F,
+		caption="Number of completed checks by master students in the last 12 months",
+		position="h") %>%
 kable_styling(latex_options = "striped") %>%
-row_spec(months,hline_after=TRUE)
-
+row_spec(12,hline_after=TRUE)
 
 ```
 
 \clearpage
 
-```{r echo=FALSE}
-plot_staff
-plot_staff_department_bar
-plot_students
+```{r echo=FALSE, message = F}
+plot_numbers(data = self_check_all_month,
+                         period = "Month",
+                         position="Staff",
+                         type="line",
+                         smooth=TRUE,
+                         num_periods = 24,
+                         title="Number of completed self-checks by staff")
+
+plot_numbers(data = self_check_all_month,
+                         period = "Month",
+                         position="Staff",
+                         type="line",
+                         smooth=TRUE,
+                         num_periods = 24,
+                         title="Number of completed self-checks by students")
+
+plot_numbers(data = self_check_all_month,
+                         period = "Year",
+                         position="Staff",
+                         type="bar",
+                         smooth=FALSE,
+                         group = "Department",
+                         num_periods = 12,
+                         title="Number of completed self-checks by staff")
+
+
 ```

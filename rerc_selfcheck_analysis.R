@@ -242,9 +242,10 @@ students_overview_lastmonths <- table_by_period(data=self_check_all_month,
 plot_numbers <- function(data,
                          position=NULL,
                          period,
-                         group,
+                         group = 1,
                          type="line",
                          smooth=TRUE,
+                         num_periods = 24,
                          title="") {
 
     #prepare data
@@ -256,18 +257,30 @@ plot_numbers <- function(data,
             filter(Position==position)
     }
 
-    df <-
 
+    #nummarize by group
+    df <-
         df %>%
         select(!!period,!!group,N) %>%        
         group_by(across(-N)) %>%
         summarize(N=sum(N))
 
+    #select number of periods
+    obs_per_period <- length(df[[period]]) / n_distinct(df[[period]])
+    browser()
+    df <-
+        df %>%
+        arrange(.data[[period]]) %>%
+        slice_tail(n=obs_per_period * num_periods) %>%
+        ungroup()
+    browser()
+
     #plot
     plot <-
         df %>% 
         ggplot(aes_string(x=period, y="N", group=group,color=group,fill=group))
-    
+
+
     if (type=="line") {
         plot <- plot +
             geom_line()
@@ -280,36 +293,29 @@ plot_numbers <- function(data,
     plot <- plot +          
             geom_smooth(method="loess",formula = y ~ x,se=FALSE)
     }
-    
+
+    if (group == 1){
+        plot <- plot + theme(legend.position = "none")
+    }
+
     plot <- plot +
-            theme(axis.text.x = element_text(angle = 90)) +
-            ggtitle(title) %>% 
-    return(plot)
+           theme(axis.text.x = element_text(angle = 90)) +
+           ggtitle(title) 
+    plot
 }
 
 
 
-plot_all <- plot_numbers(data = self_check_all_month,
+
+
+
+
+
+
+plot_numbers(data = self_check_all_month,
                          period = "Month",
-                         group="Position",
-                         title="Number of completed self-checks by staff and students")
-
-
-plot_bar <- plot_numbers(data = self_check_all_month,
-                         period = "Year",
                          position="Staff",
-                         type="bar",
-                         smooth=FALSE,
-                         group = "Department",
+                         type="line",
+                         smooth=TRUE,
+                         num_periods = 24,
                          title="Number of completed self-checks by staff")
-
-
-
-
-table_by_period(data=self_check_all_month,
-                position="Staff",
-                period="Month",
-                num_periods=12,
-                cols="Department",
-                dept_total=TRUE,
-                prop_col=FALSE) 
