@@ -17,9 +17,6 @@ start_date <- "2022-06-20"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- F
 
-
-
-
 ##further setup (no changes needed)
 
 #make the start date useable to the sourced scripts
@@ -33,7 +30,9 @@ if (download_data) {
 
 #analyze
 source("rerc_selfcheck_analysis.r")
-
+#load additional data
+staff_data <- read.csv("annual_report/sep_tabellen.csv")
+student_data <- read.csv("annual_report/Studenten_tabellen.csv")
 
 ```
 
@@ -49,9 +48,9 @@ No letters to the FB -->
 # Membership Composition
 The RERC consists of five members, one from each department of the Faculty. The RERC is supported by a secretary supplied by the Research Support Office: Koen Leuveld, who is also Data Steward and Privacy Champion. The members, and the dates by which their appointments end, are listed in Table 1. Throughout the academic year (September - June) members meet on a monthly basis to discuss ethics issues and policies within the faculty.
 
-```{r,  echo=FALSE}
-kable(members,
-      booktabs = T, 
+```{r,  echo=FALSE, message = FALSE}
+read_csv("Term_limits.csv") %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Composition of the RERC",
       position="h") %>%
@@ -67,9 +66,13 @@ Since 2017 the RERC provides an online self-check tool^[The self-check is a Qual
 
 Since its inception, the self-check tool has been used more than 1,700 times. Table 2 provides a breakdown of the use of the tool by FSS department.
 
-```{r total_by_year,  echo=FALSE}
-kable(total_by_year,
-      booktabs = T, 
+```{r total_by_year,  echo=FALSE, , message=F}
+
+table_by_period(data=self_check_all_month,
+                period = "Year",
+                num_periods=6,
+                cols="Year") %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Number of completed checks per department",
       position="h") %>%
@@ -86,9 +89,16 @@ Table 3 provides a breakdown of use by researchers alone, excluding students. Fu
 Differences between departments in the numbers of checks per research FTE are likely to be due to the type of data researchers collect and analyze. Ethics review is connected to data collection. Researchers at SOC often use secondary data, for which ethics review has been completed by the team that initially collected the data. Researchers at COM often collect data in experiments, which can be designed and implemented in a shorter period of time than ethnographic data collections. 
 
 
-```{r, echo=FALSE}
-kable(staff_by_year_FTE,
-      booktabs = T, 
+```{r staff_by_year_FTE, echo=FALSE, , message=F}
+table_by_period(data=self_check_all_month,
+                position="Staff",
+                period="Year",
+                num_periods=4,
+                join=staff_data[-3],
+                cols="Year",
+                dept_total=FALSE,
+                prop_col=TRUE) %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Number of completed checks excluding students and research time in FTE, by department",
       position="h",
@@ -110,9 +120,17 @@ add_header_above(header = c(" " = 1,
 Table 4 is similar to Table 3, however rather than considering research inputs, it compares checks to research outputs^[The SEP tables include Refereed articles, Non-refereed articles, Books, Book chapters, PhD-theses, Professional publications, Publications general public, and Other research output. The numbers reported here are a sum of these outputs], again obtained from the SEP tables. COM uses the tool most intensively per research output, about half a check per publication in 2021 (54%). This is about twice as intensively as PSPA (33%) and ORG (24%). SOC (14%) and SCA (10%) use the self-check tool least intensively. Again, differences between departments in the type of data collected and analyzed are important reasons for differences in the use of the self-check per publication. Also differences in the types of publication are likely to be important. SCA and ORG publish more non-empirical work than the other departments. They may also base more publications on one data collection effort (for which one self-check is needed).
 
 
-```{r echo=FALSE}
-kable(staff_by_year_pub,
-      booktabs = T, 
+```{r staff_by_year_pub, echo=FALSE, message = F}
+
+table_by_period(data=self_check_all_month,
+                position="Staff",
+                period="Year",
+                num_periods=4,
+                join=staff_data[-4],
+                cols="Year",
+                dept_total=FALSE,
+                prop_col=TRUE) %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Number of completed checks excluding students and total research outputs, by department",
       position="h",
@@ -133,9 +151,16 @@ add_header_above(header = c(" " =  1,
 Table 5 compares the numbers of students in the programs from each department to the numbers of self-checks done. Overall, the proportion of checks done per student has risen considerably over the four years considered: from 20% to 72%. In some departments, the propotion now exceeds 100%, which is due to students performing multiple self-checks. This is encouraged, as one motivation behind the self-check is to encourage people to change their research design to avoid ethics issues. The adapted research must then be subjected to a new self-check. Interestingly, the proportion of checks among staff does not correlate poistively with the numbers done by students. SCA and SOC have low proportions of checks among staff, but very high proportions among students. The low number of checks at ORG is cause for concern.
 
 
-```{r echo=FALSE}
-kable(students_by_year,
-      booktabs = T, 
+```{r students_by_year, echo=FALSE}
+table_by_period(data=self_check_all_month,
+               position="Student",
+               period="Academic_Year",
+               num_periods=4,
+               join=student_data,
+               cols="Academic_Year",
+               dept_total=FALSE,
+               prop_col=TRUE) %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Number of completed checks by students and total number of master students, by department",
       position="h",
@@ -153,16 +178,20 @@ add_header_above(header = c(" " = 1,
 
 ```
 
-
-
 # Full Review
 
 If the self-check reveals potential ethics issues, these are then discussed with the relevant department's representative in the RERC. If the ethics issues are serious enough, researchers should request a full review of the study. Table 6 shows the total number of applications for full review done through the Qualtrics Form^[The full review qualtrics form can be found here:https://vuass.eu.qualtrics.com/jfe/form/SV_9tBjPqFq6bxv2Sx], compared with the total number of completed self-checks by department. Not all of the applications for full review will be taken into consideration by the committee, since some of them concern applications by Master students, which the RERC does not review. Overall, it is clear from the table that the numbers of full review are low, and that only a fraction of all research projects for which researchers at the faculty completed a self-check necessitated a full review.
 
 
-```{r echo=FALSE}
-kable(full_review_vs_selfcheck,
-      booktabs = T, 
+```{r full_review_vs_selfcheck, echo=FALSE}
+table_by_period(data=full_review,
+               period="Year",
+               num_periods=4,
+               join=self_check_all_year,
+               cols="Year",
+               dept_total=FALSE,
+               prop_col=TRUE) %>%
+kable(booktabs = T, 
       longtable=F,
       caption="Number of Full Reviews requested and number of self-checks completed, by department",
       position="h",

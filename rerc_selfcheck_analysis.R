@@ -29,8 +29,6 @@ departments = data.frame(Q2.6 = c("Communication Science",
 self_check <- read_csv("data/self_check_new.csv")
 
 
-
-
 ##count the number of times an ethics review is required (answers ending in (*))
 self_check$numissues <- apply(self_check, 1, 
                               function(x) sum(str_detect(x, "\\(\\*\\)$"),
@@ -41,7 +39,7 @@ self_check$Outcome <- ifelse(self_check$numissues>0,"Review needed","OK")
 self_check$review_needed <- ifelse(self_check$numissues>0,1,0)
 self_check$OK <- ifelse(self_check$numissues>0,0,1)
 
-
+#clean up text in project title
 self_check$Q2.8 <- gsub("[\r\n]", " ", self_check$Q2.8)
 
 ##generate an overview for all the staff and PhD candidates.
@@ -84,6 +82,8 @@ self_check_all <- read_csv("data/self_check_all.csv")
 #the professors string is too long to fit below
 professors <- "Postdoc / assistant / associate / full professor"
 
+
+#collapse the self-check data to month
 self_check_all_month <- 
     self_check_all %>%
     mutate(Date = ymd_hms(RecordedDate)) %>%
@@ -122,6 +122,13 @@ self_check_all_month <-
     #clean up
     arrange(Position,Month,Department) %>%
     relocate(Academic_Year,Year,Quarter,Month)   
+
+
+#collaps self-checks to calendar year
+self_check_all_year <- 
+    self_check_all_month %>%
+    group_by(Department,Year) %>%
+    summarize(Checks = sum(N))
 
 #full review data
 full_review <-
@@ -217,7 +224,7 @@ table_by_period <-
         pivot_wider(names_from=cols, values_from=-c(1,2)) %>%
         relocate(ends_with(colvalues),.after=last_col()) 
     
-    print(df)
+    #print(df)
     return(df)
 }
 
@@ -230,70 +237,6 @@ students_overview_lastmonths <- table_by_period(data=self_check_all_month,
                                               position="Student",
                                               period="Month",
                                               num_period=12)
-
-#tables for the annual report
-staff_data <- read.csv("annual_report/sep_tabellen.csv")
-student_data <- read.csv("annual_report/Studenten_tabellen.csv")
-
-
-#tables for the annual report
-
-members <- read_csv("annual_report/Term_limits.csv")
-
-
-
-
-total_by_year <- table_by_period(data=self_check_all_month,
-                                 period = "Year",
-                                 num_periods=6,
-                                 cols="Year")
-
-staff_by_year_FTE <- table_by_period(data=self_check_all_month,
-                                     position="Staff",
-                                     period="Year",
-                                     num_periods=4,
-                                     join=staff_data[-3],
-                                     cols="Year",
-                                     dept_total=FALSE,
-                                     prop_col=TRUE)
-
-staff_by_year_pub <-  table_by_period(data=self_check_all_month,
-                                      position="Staff",
-                                      period="Year",
-                                      num_periods=4,
-                                      join=staff_data[-4],
-                                      cols="Year",
-                                      dept_total=FALSE,
-                                      prop_col=TRUE)
-
-students_by_year <-  table_by_period(data=self_check_all_month,
-                                     position="Student",
-                                     period="Academic_Year",
-                                     num_periods=4,
-                                     join=student_data,
-                                     cols="Academic_Year",
-                                     dept_total=FALSE,
-                                     prop_col=TRUE)
-
-full_review_by_year <- table_by_period(data=full_review,
-                                       period = "Year",
-                                       num_periods=6,
-                                       cols="Year")
-
-self_check_all_year <- 
-    self_check_all_month %>%
-    group_by(Department,Year) %>%
-    summarize(Checks = sum(N)) 
-
-full_review_vs_selfcheck <-  table_by_period(data=full_review,
-                                     period="Year",
-                                     num_periods=4,
-                                     join=self_check_all_year,
-                                     cols="Year",
-                                     dept_total=FALSE,
-                                     prop_col=TRUE)
-
-
 
 ## function to create line graphs
 plot_numbers <- function(data,
@@ -361,3 +304,12 @@ plot_bar <- plot_numbers(data = self_check_all_month,
                          title="Number of completed self-checks by staff")
 
 
+
+
+table_by_period(data=self_check_all_month,
+                position="Staff",
+                period="Month",
+                num_periods=12,
+                cols="Department",
+                dept_total=TRUE,
+                prop_col=FALSE) 
