@@ -228,15 +228,15 @@ table_by_period <-
     return(df)
 }
 
-#tables for monthly report
-staff_overview_lastmonths <-  table_by_period(data=self_check_all_month,
-                                              position="Staff",
-                                              period="Month",
-                                              num_period=12)
-students_overview_lastmonths <- table_by_period(data=self_check_all_month,
-                                              position="Student",
-                                              period="Month",
-                                              num_period=12)
+# #tables for monthly report
+# staff_overview_lastmonths <-  table_by_period(data=self_check_all_month,
+#                                               position="Staff",
+#                                               period="Month",
+#                                               num_period=12)
+# students_overview_lastmonths <- table_by_period(data=self_check_all_month,
+#                                               position="Student",
+#                                               period="Month",
+#                                               num_period=12)
 
 ## function to create line graphs
 plot_numbers <- function(data,
@@ -245,7 +245,7 @@ plot_numbers <- function(data,
                          group = 1,
                          type="line",
                          smooth=TRUE,
-                         num_periods = 24,
+                         num_periods = NULL,
                          title="") {
 
     #prepare data
@@ -263,17 +263,18 @@ plot_numbers <- function(data,
         df %>%
         select(!!period,!!group,N) %>%        
         group_by(across(-N)) %>%
-        summarize(N=sum(N))
-
-    #select number of periods
-    obs_per_period <- length(df[[period]]) / n_distinct(df[[period]])
-    browser()
-    df <-
-        df %>%
-        arrange(.data[[period]]) %>%
-        slice_tail(n=obs_per_period * num_periods) %>%
+        summarize(N=sum(N)) %>%
         ungroup()
-    browser()
+
+    #get the number of obs needed
+    if (!is.null(num_periods)){
+    obs_per_period <- (length(df[[period]]) / n_distinct(df[[period]]))
+    n_rows <-  obs_per_period * num_periods
+    
+    df <- df %>%
+        arrange(.data[[period]]) %>%
+        slice_tail(., n=n_rows) 
+    }
 
     #plot
     plot <-
@@ -303,19 +304,3 @@ plot_numbers <- function(data,
            ggtitle(title) 
     plot
 }
-
-
-
-
-
-
-
-
-
-plot_numbers(data = self_check_all_month,
-                         period = "Month",
-                         position="Staff",
-                         type="line",
-                         smooth=TRUE,
-                         num_periods = 24,
-                         title="Number of completed self-checks by staff")

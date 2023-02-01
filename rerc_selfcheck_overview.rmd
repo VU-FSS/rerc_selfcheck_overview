@@ -45,7 +45,7 @@ if (download_data) {
 source("rerc_selfcheck_analysis.r")
 ```
 
-```{r echo=FALSE}
+```{r , echo=FALSE, message = FALSE}
 #display all tables and plots
 kable(staff_overview,
 		booktabs = T ,
@@ -69,8 +69,6 @@ kable(students_overview,
 		position = "h") %>%
 kable_styling(latex_options = "striped") 
 
-
-#months <- nrow(staff_overview_lastmonths) - 1
 
 table_by_period(data=self_check_all_month,
                 position="Staff",
@@ -106,29 +104,28 @@ row_spec(12,hline_after=TRUE)
 
 ```{r echo=FALSE, message = F}
 plot_numbers(data = self_check_all_month,
-                         period = "Month",
-                         position="Staff",
-                         type="line",
-                         smooth=TRUE,
-                         num_periods = 24,
-                         title="Number of completed self-checks by staff")
+             period = "Month",
+             group = "Position",
+             type = "line",
+             smooth=TRUE,
+             num_periods = 48,
+             title="Number of completed self-checks by staff and students")
+
+# plot_numbers(data = self_check_all_month,
+#              period = "Month",
+#              position="Staff",
+#              type="line",
+#              smooth=TRUE,
+#              title="Number of completed self-checks by students")
 
 plot_numbers(data = self_check_all_month,
-                         period = "Month",
-                         position="Staff",
-                         type="line",
-                         smooth=TRUE,
-                         num_periods = 24,
-                         title="Number of completed self-checks by students")
-
-plot_numbers(data = self_check_all_month,
-                         period = "Year",
-                         position="Staff",
-                         type="bar",
-                         smooth=FALSE,
-                         group = "Department",
-                         num_periods = 12,
-                         title="Number of completed self-checks by staff")
+             period = "Quarter",
+             position="Staff",
+             type="bar",
+             smooth=FALSE,
+             group = "Department",
+             num_periods = 12,
+             title="Number of completed self-checks by staff per department")
 
 
 ```
