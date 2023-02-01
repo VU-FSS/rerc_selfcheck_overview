@@ -24,8 +24,7 @@ departments = data.frame(Q2.6 = c("Communication Science",
                          Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
 ##Data Prep
-self_check_all <- read_csv("data/self_check_all.csv")
-
+#define fuc
 fix_dates <- function(df){
     #function to make dates in qualtrics data usable 
     df %>%
@@ -81,13 +80,6 @@ cleanup <- function(df){
         mutate(Project = gsub("[\r\n]", " ", Project)) 
 }
 
-#collapse the self-check data to month
-self_check_all_month <- 
-    self_check_all %>%
-    fix_dates %>%
-    add_column(Outcome = compute_outcome(.))%>%
-    cleanup() %>%
-    select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
 
 
 # self_check_all %>%

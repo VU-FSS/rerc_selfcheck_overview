@@ -41,13 +41,23 @@ if (download_data) {
 	source("rerc_selfcheck_qualtricsdownload.R") 
 }
 
-#analyze
+#load helper functions
 source("rerc_selfcheck_analysis.r")
+
+
+#clean up data
+self_check_data <- 
+    read_csv("data/self_check_all.csv") %>%
+    fix_dates %>%
+    add_column(Outcome = compute_outcome(.))%>%
+    cleanup() %>%
+    select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
+
 ```
 
 ```{r , echo=FALSE, message = FALSE}
 #display all tables and plots
-self_check_all_month %>%
+self_check_data %>%
 filter(Date > start_date) %>%
 filter(Position == "Staff") %>%
 select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
@@ -66,7 +76,7 @@ column_spec(4,width="1cm") %>%
 column_spec(5,width="4.5cm") %>%
 column_spec(6,width="1cm") 
 
-table_by_period(data=self_check_all_month,
+table_by_period(data=self_check_data,
                 position="Student",            
                rows = Department,
               cols = Outcome,
@@ -79,7 +89,7 @@ kable(booktabs = T ,
 kable_styling(latex_options = "striped") 
 
 
-table_by_period(data=self_check_all_month,
+table_by_period(data=self_check_data,
                 position="Staff",
                 rows=Month,
                 cols = Department,
@@ -91,7 +101,7 @@ kable(booktabs = T,
 kable_styling(latex_options = "striped") %>%
 row_spec(12,hline_after=TRUE)
 
-table_by_period(data=self_check_all_month,
+table_by_period(data=self_check_data,
                 position="Student",
                 rows=Month,
                 cols = Department,
@@ -108,7 +118,7 @@ row_spec(12,hline_after=TRUE)
 \clearpage
 
 ```{r echo=FALSE, message = F}
-plot_numbers(data = self_check_all_month,
+plot_numbers(data = self_check_data,
              x = Month,
              group = Position,
              type = "line",
@@ -116,7 +126,7 @@ plot_numbers(data = self_check_all_month,
              title="Number of completed self-checks by staff and students")
 
 
-plot_numbers(data = self_check_all_month,
+plot_numbers(data = self_check_data,
              x = Quarter,
              position="Staff",
              type="bar",
