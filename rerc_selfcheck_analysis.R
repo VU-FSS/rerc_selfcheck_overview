@@ -26,7 +26,7 @@ departments = data.frame(Q2.6 = c("Communication Science",
 #analysis of recent applications#
 #################################
 
-self_check <- read_csv("data/self_check_new.csv")
+self_check <- read_csv("data/self_check_all.csv")
 
 
 ##count the number of times an ethics review is required (answers ending in (*))
@@ -79,29 +79,12 @@ students_overview <-    self_check %>%
 ##Data Prep
 self_check_all <- read_csv("data/self_check_all.csv")
 
-#the professors string is too long to fit below
-professors <- "Postdoc / assistant / associate / full professor"
-
-
-#collapse the self-check data to month
-self_check_all_month <- 
-    self_check_all %>%
-    mutate(Date = ymd_hms(RecordedDate)) %>%
-    mutate(Month = floor_date(as_date(Date), "month"))      %>%
-    mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
-                                Q2.4 == professors,
-                              "Staff","Student")) %>%
-    group_by(Q2.6,Position,Month)%>%
-    right_join(departments) %>%
-    relocate(Department = Dept) %>%
-    #mutate(Department = as_factor(Department),Position = as_factor(Position)) %>%
-    group_by(Department,Position,Month)%>%
-    summarize(N=n()) %>%
-    ungroup() %>%
-    complete(Department,Position,Month,fill=list(N=0)) %>%
-
-    #year
-    mutate(Year = year(Month)) %>%
+fix_dates <- function(df){
+    #function to make dates in qualtrics data usable 
+    df %>%
+    mutate(Date = as_date(ymd_hms(RecordedDate))) %>%
+    mutate(Month = floor_date(Date, "month"))  %>%
+    mutate(Year = as.character(year(Month))) %>%
 
     #quarter
     mutate(Quarter = paste(year(Month),
@@ -117,29 +100,63 @@ self_check_all_month <-
     #month
     mutate(Month=paste(Year,
                        str_pad(month(Month),2,pad="0"),
-                       sep="-")) %>% 
+                       sep="-")) 
+}
 
-    #clean up
-    arrange(Position,Month,Department) %>%
-    relocate(Academic_Year,Year,Quarter,Month)   
+compute_outcome <- function(df){
+    #count the number of issues in the check
+    #depends on the redesign published after 28-3-2022 
+    #no valid results for checks made before that date!
+    numissues <- apply(df, 1, 
+        function(x) sum(str_detect(x, "\\(\\*\\)$"),
+                          na.rm = TRUE))
+
+    ifelse(numissues>0,"Review needed","OK")
+
+}
+
+fix_positions_departments <- function(df){
+    #the professors string is too long to fit below
+    professors <- "Postdoc / assistant / associate / full professor"
+
+    df %>%
+        mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
+                            Q2.4 == professors,
+                          "Staff","Student")) %>%
+        right_join(departments) %>%
+        relocate(Department = Dept)
+}
 
 
-#collaps self-checks to calendar year
-self_check_all_year <- 
-    self_check_all_month %>%
-    group_by(Department,Year) %>%
-    summarize(Checks = sum(N))
+
+#collapse the self-check data to month
+self_check_all_month <- 
+    self_check_all %>%
+    fix_dates %>%
+    add_column(Outcome = compute_outcome(.))%>%
+    fix_positions_departments %>%
+    mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
+    select(Date,Name,Position,Department,Outcome,Month,Quarter,Year,Academic_Year)
+
+    
+
+
+# #collaps self-checks to calendar year
+# self_check_all_year <- 
+#     self_check_all_month %>%
+#     group_by(Department,Year) %>%
+#     summarize(Checks = sum(N))
 
 #full review data
-full_review <-
-    read_csv("data/full_review.csv") %>%
-    right_join(departments,by = c("Q8" = "Q2.6")) %>%
-    mutate(Date = ymd_hms(RecordedDate)) %>%
-    mutate(Year = year(Date)) %>%
-    relocate(Department = Dept) %>%
-    group_by(Department, Year) %>%
-    summarize(N=n()) %>% 
-    relocate(Year,Department,N) 
+# full_review <-
+#     read_csv("data/full_review.csv") %>%
+#     right_join(departments,by = c("Q8" = "Q2.6")) %>%
+#     mutate(Date = ymd_hms(RecordedDate)) %>%
+#     mutate(Year = year(Date)) %>%
+#     relocate(Department = Dept) %>%
+#     group_by(Department, Year) %>%
+#     summarize(N=n()) %>% 
+#     relocate(Year,Department,N) 
 
 
 ## function to create tables with total number of checks per deparment per time period
@@ -147,15 +164,18 @@ full_review <-
 table_by_period <- 
     function(data,
              position=NULL, #Student or Staff. NULL for total
-             period, #column in data over which data will be summed
-             num_periods, #last N periods will be included
+             period=NULL, #column in data over which data will be summed
+             num_periods = NULL, #last N periods will be included
              join=NULL, #data frame that adds one column to <PERIOD>, Department
              cols="Department", #either departments or <PERIOD> can be used as column
              dept_total=TRUE, #add a column/row with totals by deparment
              period_total=TRUE, #add a column/row with totals by period
-             prop_col=FALSE) { #add a column with proportion of checks/joined data
+             prop_col=FALSE,
+             start_date = NULL) { #add a column with proportion of checks/joined data
 
     df <- data 
+
+
 
     #filter position
     if (!is.null(position)) {
@@ -164,13 +184,22 @@ table_by_period <-
         filter(Position==position) 
     }
 
+    #filter by start_date
+    if (!is.null(start_date)) {
+        df <-
+        df %>% 
+        filter(Date > start_date)  
+    }
+
     #collapse to one line per period per Department
-    df <-
-        df %>%
-        select(.data[[period]],Department,N) %>%        
-        group_by(.data[[period]],Department) %>%
-        summarize(N=sum(N)) %>%
-        ungroup()
+    if (!is.null(period)){
+        df <-
+            df %>%
+            #select(.data[[period]],Department,N) %>%        
+            group_by(.data[[period]],Department) %>%
+            summarize(N=n()) %>%
+            ungroup()
+    }
 
     #join external data
     if (!is.null(join)){
@@ -180,15 +209,17 @@ table_by_period <-
     }
 
     #select relevant periods, and ensure period is encoded as char (needed later)
+    if(!is.null(period) && !is.null(num_periods)){
     df <-
         df %>%
         arrange(.data[[period]]) %>%
         slice_tail(n=5*num_periods) %>%
-        ungroup() %>%
-        mutate(across(matches(period),as.character))
+        ungroup() #%>%
+        #mutate(across(matches(period),as.character))
+    }
 
     #generate totals by period
-    if (period_total){
+    if (period_total && !is.null(period)){
     df <-
         df %>%
         group_by(across(matches(period))) %>%
@@ -198,14 +229,13 @@ table_by_period <-
     }
 
     #generate totals by dept 
-    if (dept_total){ 
+    if (dept_total & !is.null(period)){ 
         df <-
             df %>%     
             group_by(Department) %>%
             bind_rows(summarise(.,
                                 across(where(is.numeric),sum),
-                                across(matches(period), ~"Total"))) %>%
-            arrange(.data[[period]]) 
+                                across(matches(period), ~"Total")))
     }
     
     #compute proportions
@@ -217,22 +247,37 @@ table_by_period <-
     }
 
     #pivot
+    if (!is.null(period)) {
     colvalues <- as.character(unique(df[[cols]]))
-    df <-
-        df %>%
-        #pivot 
-        pivot_wider(names_from=cols, values_from=-c(1,2)) %>%
-        relocate(ends_with(colvalues),.after=last_col()) 
-    
+        df <-
+            df %>%
+            #pivot 
+            pivot_wider(names_from=cols, values_from=-c(1,2),values_fill=0) %>%
+            relocate(ends_with(colvalues),.after=last_col()) 
+    } else {
+        df <-
+            df %>% 
+            select(Date,Name,Department,Outcome)
+    }
     #print(df)
     return(df)
 }
 
 # #tables for monthly report
-# staff_overview_lastmonths <-  table_by_period(data=self_check_all_month,
-#                                               position="Staff",
-#                                               period="Month",
-#                                               num_period=12)
+# table_by_period(data=self_check_all_month,
+#               position="Staff",
+#               period="Month",
+#               num_period=12)
+
+# table_by_period(data=self_check_all_month,
+#               position="Staff",            
+#               start_date="2023-01-01")
+
+# table_by_period(data=self_check_all_month,
+#               position="Student",            
+#               period = "Outcome",
+#               cols = "Outcome")
+
 # students_overview_lastmonths <- table_by_period(data=self_check_all_month,
 #                                               position="Student",
 #                                               period="Month",

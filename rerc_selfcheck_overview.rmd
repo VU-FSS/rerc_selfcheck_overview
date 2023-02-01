@@ -47,8 +47,10 @@ source("rerc_selfcheck_analysis.r")
 
 ```{r , echo=FALSE, message = FALSE}
 #display all tables and plots
-kable(staff_overview,
-		booktabs = T ,
+table_by_period(data=self_check_all_month,
+               position="Staff",            
+               start_date="2023-01-01") %>%
+kable(booktabs = T ,
 		longtable=T,
 		caption=paste("Completed self checks by staff and PhD candidates 
 						  since",start_date, sep=" ", collapse=NULL),
@@ -61,8 +63,11 @@ column_spec(3,width="1cm") %>%
 column_spec(4,width="6cm") %>%
 column_spec(5,width="1cm") 
 
-kable(students_overview, 
-		booktabs = T ,
+table_by_period(data=self_check_all_month,
+              position="Student",            
+              period = "Outcome",
+              cols = "Outcome") %>%
+kable(booktabs = T ,
 		longtable=F,
 		caption=paste("Number of completed checks by students by department 
 						  since",start_date, sep=" ", collapse=NULL),
@@ -103,13 +108,13 @@ row_spec(12,hline_after=TRUE)
 \clearpage
 
 ```{r echo=FALSE, message = F}
-plot_numbers(data = self_check_all_month,
-             period = "Month",
-             group = "Position",
-             type = "line",
-             smooth=TRUE,
-             num_periods = 48,
-             title="Number of completed self-checks by staff and students")
+# plot_numbers(data = self_check_all_month,
+#              period = "Month",
+#              group = "Position",
+#              type = "line",
+#              smooth=TRUE,
+#              num_periods = 48,
+#              title="Number of completed self-checks by staff and students")
 
 # plot_numbers(data = self_check_all_month,
 #              period = "Month",
@@ -118,14 +123,14 @@ plot_numbers(data = self_check_all_month,
 #              smooth=TRUE,
 #              title="Number of completed self-checks by students")
 
-plot_numbers(data = self_check_all_month,
-             period = "Quarter",
-             position="Staff",
-             type="bar",
-             smooth=FALSE,
-             group = "Department",
-             num_periods = 12,
-             title="Number of completed self-checks by staff per department")
+# plot_numbers(data = self_check_all_month,
+#              period = "Quarter",
+#              position="Staff",
+#              type="bar",
+#              smooth=FALSE,
+#              group = "Department",
+#              num_periods = 12,
+#              title="Number of completed self-checks by staff per department")
 
 
 ```
