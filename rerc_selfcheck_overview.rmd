@@ -15,7 +15,7 @@ This file compiles data from from the self check of VU-FSS Research Ethics
 Review Committee into an overview document.
 
 The data is downloaded from qualtrics by rerc_selfcheck_qualtricsdownload.R and
-processed by rerc_selfcheck_analysis.R
+processed using functions as defined rerc_selfcheck_analysis.R
 
 -->
 
@@ -27,7 +27,7 @@ library(kableExtra)
 #user defined variables:
 start_date <- "2023-01-01"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- F
+download_data <- T
 
 
 ##further setup (no changes needed)
@@ -72,15 +72,17 @@ set_widths(c(2,2.5,1,1,4.5,1))
 self_check_data %>%
 filter(Date > start_date) %>%
 filter(Position == "Student") %>%
-table_by_period(rows = Department,
+counts_table(rows = Department,
                 cols = Outcome) %>%
 standard_kable(paste("Number of completed checks by students by department 
-						  since",start_date, sep=" ", collapse=NULL))
+						  since",start_date, sep=" ", collapse=NULL)) %>%
+row_spec(5,hline_after=TRUE)
+
 
 #staff past years
 self_check_data %>%
 filter(Position == "Staff") %>%
-table_by_period(rows=Month,
+counts_table(rows=Month,
                 cols = Department,
                 num_rows=12) %>%
 standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 12 months") %>%
@@ -89,7 +91,7 @@ row_spec(12,hline_after=TRUE)
 #students past year
 self_check_data %>%
 filter(Position == "Student") %>%
-table_by_period(rows=Month,
+counts_table(rows=Month,
                 cols = Department,
                 num_rows=12) %>%
 standard_kable(caption="Number of completed checks by master students in the last 12 months") %>%
@@ -100,23 +102,24 @@ row_spec(12,hline_after=TRUE)
 \clearpage
 
 ```{r echo=FALSE, message = F}
-plot_numbers(data = self_check_data,
-             x = Month,
-             group = Position,
-             type = "line",
-             smooth=TRUE,             
-             title="Number of completed self-checks by staff and students")
-
 
 self_check_data %>%
-filter(Position == "Student") %>%
-plot_numbers(x = Quarter,
-             type="bar",
-             smooth=T,
-             group = Department,
-             num_x = 12,
-             title="Number of completed self-checks by staff per department")
+   collapse_df(Month,Position) %>%
+   ggplot(aes(x=Month, y=N, group=Position,color=Position,fill=Position)) +
+      geom_line() +          
+      geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
+      theme(axis.text.x = element_text(angle = 90)) +
+      ggtitle("Number of completed self-checks by staff and students") 
 
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   collapse_df(Quarter,Department) %>%
+   crop_df(Quarter,16) %>%
+   ggplot(aes(x=Quarter, y=N, group=Department,color=Department,fill=Department)) +
+      geom_bar(stat="identity",color="black", position=position_dodge()) +          
+      geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
+      theme(axis.text.x = element_text(angle = 90)) +
+      ggtitle("Number of completed self-checks by staff") 
 
 
 ```

@@ -9,6 +9,8 @@
 #June 2022
 #Refactored on Jan 2023
 
+#To Do: the annual report has tables with double headers; this is currently not possible
+
 library(tidyverse)
 library(lubridate)
 
@@ -59,14 +61,14 @@ compute_outcome <- function(df){
     ifelse(numissues>0,"Review needed","OK")
 }
 
-cleanup <- function(df){
+cleanup <- function(dataframe){
     #misc cleaning of data.
     #takes raw data, and returns cleaned data
 
     #the professors string is too long to fit below
     professors <- "Postdoc / assistant / associate / full professor"
 
-    df %>%
+    dataframe %>%
         mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
                                   Q2.4 == professors,
                                   "Staff","Student")) %>%
@@ -81,7 +83,7 @@ cleanup <- function(df){
 }
 
 
-crop_df <- function(df,var,n){
+crop_df <- function(dataframe,var,n){
 #function to crop observations to last N unique observations
 #takes a data frame, and returns the data frame 
 #cropped to the last n unique observations in var
@@ -90,30 +92,30 @@ crop_df <- function(df,var,n){
     var <- enquo(var)
     if (!is.null(n)){
         
-        obs_selector <- df %>%
+        obs_selector <- dataframe %>%
             select(!!var) %>%
             unique %>%
             tail(n=n)
 
-        df %>% 
+        dataframe %>% 
             filter(!!var %in% obs_selector[[1]]) %>%
             return()
     } else {
-        return(df)
+        return(dataframe)
     }
 }
 
 collapse_df <- function(dataframe,...){
+   #browser()
    dataframe %>%
       group_by(...) %>%
       summarize(N=n()) %>%
-      ungroup()
+      ungroup() %>%
+      complete(fill=list(N=0),...) 
 }
 
-
-
 #Data presentation functions
-table_by_period <-
+counts_table <-
 ## function to create tables with total number of checks per deparment per time period
 ## There is no error checking!! 
     function(dataframe,
@@ -131,11 +133,9 @@ table_by_period <-
 
     dataframe <- 
         dataframe %>%
-        collapse_df(,!!rows,!!cols,!!cols2) %>%
+        collapse_df(!!rows,!!cols,!!cols2) %>%
         crop_df(.,!!rows,num_rows)%>%
         crop_df(.,!!cols,num_cols)
-
-    print(dataframe)
 
     #row_totals
     if (row_total){
@@ -144,9 +144,10 @@ table_by_period <-
         group_by(!!rows) %>%
         bind_rows(summarise(.,
                             across(where(is.numeric),sum),
-                            across(!!cols, ~"Total"))) %>%
+                            across(c(!!cols,!!cols2), ~"Total"))) %>%
         ungroup()
     }
+    
 
     #column totals
     if (col_total){
@@ -155,24 +156,23 @@ table_by_period <-
         group_by(!!cols) %>%
         bind_rows(summarise(.,
                             across(where(is.numeric),sum),
-                            across(!!rows, ~"Total"))) %>%
+                            across(c(!!rows, !!cols2), ~"Total"))) %>%
         ungroup()
     }
     
     dataframe <- dataframe %>%
-    pivot_wider(names_from = !!cols, values_from = N,!!rows)
+    pivot_wider(names_from = c(!!cols,!!cols2), values_from = N)
     return(dataframe)
 }
 
-self_check_data %>%
-table_by_period(rows=Department,
-                cols = Year,
-                cols2 = Position,
-                num_cols = 3)
-
 ##Functions to format kable tables
-
 set_widths <- function(kableinput,widths){
+#give a vector of numbers, and this function 
+#will add column_spec to set the ith column 
+#to the width of the ith element of the vector
+#take a kable object as input,
+#and returns kable input with column specs applied
+#kable %>% set_widths(c(1,2,2))
     for (i in 1:length(widths)) {
         kableinput <- kableinput %>% column_spec(i,width=paste(widths[i],"cm",sep=""))
     }
@@ -180,6 +180,8 @@ set_widths <- function(kableinput,widths){
 }
 
 standard_kable <- function(kableinput,caption,longtable=F){
+#shortcut stroing the standard Kable settings for the reports
+#takes a data frame and outputs kable object
     kableinput %>%
     kable(booktabs = T ,
         longtable=longtable,
@@ -187,52 +189,3 @@ standard_kable <- function(kableinput,caption,longtable=F){
         position = "h") %>%
     kable_styling(latex_options = "striped")
 }   
-
-
-## function to create line graphs
-plot_numbers <- function(data,
-                         x,
-                         num_x = NULL,
-                         group,
-                         type="line",
-                         smooth=TRUE,
-                         title="") {
-
-    #prepare data
-    df <- data
-    group <- enquo(group)
-    x <- enquo(x)
-
-    #summarize by group
-    df <-
-        df %>%
-        select(!!x,!!group) %>%        
-        group_by(!!x,!!group) %>%
-        summarize(N = n()) %>%
-        crop_df(.,!!x,num_x) %>%
-        ungroup()%>% 
-        complete(!!x,!!group,fill=list(N=0))
-    
-    #plot
-    plot <-
-        df %>% 
-        ggplot(aes(x=!!x, y=N, group=!!group,color=!!group,fill=!!group))
-
-    if (type=="line") {
-        plot <- plot +
-            geom_line()
-    } else {
-        plot <- plot +
-            geom_bar(stat="identity",color="black", position=position_dodge())
-    }
-
-    if (smooth) {
-    plot <- plot +          
-            geom_smooth(method="loess",formula = y ~ x,se=FALSE)
-    }
-
-    plot <- plot +
-           theme(axis.text.x = element_text(angle = 90)) +
-           ggtitle(title) 
-    plot
-}
