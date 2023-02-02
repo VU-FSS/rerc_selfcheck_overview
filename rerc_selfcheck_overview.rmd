@@ -27,14 +27,8 @@ library(kableExtra)
 #user defined variables:
 start_date <- "2023-01-01"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- T
+download_data <- F
 
-
-##further setup (no changes needed)
-
-#make the start date useable to the sourced scripts
-#see: https://stackoverflow.com/questions/14525580/how-to-pass-command-line-arguments-when-calling-source-on-an-r-file-within-ano
-commandArgs <- function(...) start_date
 
 #Download data to update CSV files used by RERC_analysis.r
 if (download_data) {
@@ -42,10 +36,10 @@ if (download_data) {
 }
 
 #load helper functions
-source("rerc_selfcheck_analysis.r")
+source("rerc_selfcheck_overview_helpers.r")
 
 
-#clean up data
+#laod and clean data
 self_check_data <- 
     read_csv("data/self_check_all.csv") %>%
     fix_dates %>%
