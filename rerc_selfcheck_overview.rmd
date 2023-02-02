@@ -15,7 +15,7 @@ This file compiles data from from the self check of VU-FSS Research Ethics
 Review Committee into an overview document.
 
 The data is downloaded from qualtrics by rerc_selfcheck_qualtricsdownload.R and
-processed by rerc_selfcheck_analysis.R
+processed using functions as defined rerc_selfcheck_analysis.R
 
 -->
 
@@ -25,77 +25,70 @@ library(knitr)
 library(kableExtra)
 
 #user defined variables:
-start_date <- "2022-06-20"
+start_date <- "2023-01-01"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- F
 
-
-##further setup (no changes needed)
-
-#make the start date useable to the sourced scripts
-#see: https://stackoverflow.com/questions/14525580/how-to-pass-command-line-arguments-when-calling-source-on-an-r-file-within-ano
-commandArgs <- function(...) start_date
 
 #Download data to update CSV files used by RERC_analysis.r
 if (download_data) {
 	source("rerc_selfcheck_qualtricsdownload.R") 
 }
 
-#analyze
-source("rerc_selfcheck_analysis.r")
+#load helper functions
+source("rerc_selfcheck_overview_helpers.r")
+
+
+#laod and clean data
+self_check_data <- 
+    read_csv("data/self_check_all.csv") %>%
+    fix_dates %>%
+    add_column(Outcome = compute_outcome(.))%>%
+    cleanup()
+    
 ```
 
 ```{r , echo=FALSE, message = FALSE}
-#display all tables and plots
-kable(staff_overview,
-		booktabs = T ,
-		longtable=T,
-		caption=paste("Completed self checks by staff and PhD candidates 
+   
+#full staff overview
+self_check_data %>%
+filter(Date > start_date) %>%
+filter(Position == "Staff") %>%
+select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
+standard_kable(paste("Completed self checks by staff and PhD candidates 
 						  since",start_date, sep=" ", collapse=NULL),
-		position = "h")%>%
-kable_styling(latex_options = "striped") %>%
+               longtable = T)  %>%
 kable_styling(latex_options = "repeat_header") %>%
-column_spec(1,width="3cm") %>%
-column_spec(2,width="1cm") %>%
-column_spec(3,width="1cm") %>%
-column_spec(4,width="6cm") %>%
-column_spec(5,width="1cm") 
-
-kable(students_overview, 
-		booktabs = T ,
-		longtable=F,
-		caption=paste("Number of completed checks by students by department 
-						  since",start_date, sep=" ", collapse=NULL),
-		position = "h") %>%
-kable_styling(latex_options = "striped") 
+set_widths(c(2,2.5,1,1,4.5,1))
 
 
-table_by_period(data=self_check_all_month,
-                position="Staff",
-                period="Month",
-                num_periods=12,
-                cols="Department",
-                dept_total=TRUE,
-                prop_col=FALSE) %>%
-kable(booktabs = T, 
-		longtable=F,
-		caption="Number of completed checks by staff and PhD candidates in the last 12 months",
-		position="h") %>%
-kable_styling(latex_options = "striped") %>%
+#student detailed summary
+self_check_data %>%
+filter(Date > start_date) %>%
+filter(Position == "Student") %>%
+counts_table(rows = Department,
+                cols = Outcome) %>%
+standard_kable(paste("Number of completed checks by students by department 
+						  since",start_date, sep=" ", collapse=NULL)) %>%
+row_spec(5,hline_after=TRUE)
+
+
+#staff past years
+self_check_data %>%
+filter(Position == "Staff") %>%
+counts_table(rows=Month,
+                cols = Department,
+                num_rows=12) %>%
+standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 12 months") %>%
 row_spec(12,hline_after=TRUE)
 
-table_by_period(data=self_check_all_month,
-                position="Student",
-                period="Month",
-                num_periods=12,
-                cols="Department",
-                dept_total=TRUE,
-                prop_col=FALSE) %>%
-kable(booktabs = T, 
-		longtable=F,
-		caption="Number of completed checks by master students in the last 12 months",
-		position="h") %>%
-kable_styling(latex_options = "striped") %>%
+#students past year
+self_check_data %>%
+filter(Position == "Student") %>%
+counts_table(rows=Month,
+                cols = Department,
+                num_rows=12) %>%
+standard_kable(caption="Number of completed checks by master students in the last 12 months") %>%
 row_spec(12,hline_after=TRUE)
 
 ```
@@ -103,29 +96,24 @@ row_spec(12,hline_after=TRUE)
 \clearpage
 
 ```{r echo=FALSE, message = F}
-plot_numbers(data = self_check_all_month,
-             period = "Month",
-             group = "Position",
-             type = "line",
-             smooth=TRUE,
-             num_periods = 48,
-             title="Number of completed self-checks by staff and students")
 
-# plot_numbers(data = self_check_all_month,
-#              period = "Month",
-#              position="Staff",
-#              type="line",
-#              smooth=TRUE,
-#              title="Number of completed self-checks by students")
+self_check_data %>%
+   collapse_df(Month,Position) %>%
+   ggplot(aes(x=Month, y=N, group=Position,color=Position,fill=Position)) +
+      geom_line() +          
+      geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
+      theme(axis.text.x = element_text(angle = 90)) +
+      ggtitle("Number of completed self-checks by staff and students") 
 
-plot_numbers(data = self_check_all_month,
-             period = "Quarter",
-             position="Staff",
-             type="bar",
-             smooth=FALSE,
-             group = "Department",
-             num_periods = 12,
-             title="Number of completed self-checks by staff per department")
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   collapse_df(Quarter,Department) %>%
+   crop_df(Quarter,16) %>%
+   ggplot(aes(x=Quarter, y=N, group=Department,color=Department,fill=Department)) +
+      geom_bar(stat="identity",color="black", position=position_dodge()) +          
+      geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
+      theme(axis.text.x = element_text(angle = 90)) +
+      ggtitle("Number of completed self-checks by staff") 
 
 
 ```
