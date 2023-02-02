@@ -50,67 +50,49 @@ self_check_data <-
     read_csv("data/self_check_all.csv") %>%
     fix_dates %>%
     add_column(Outcome = compute_outcome(.))%>%
-    cleanup() %>%
-    select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
-
+    cleanup()
+    
 ```
 
 ```{r , echo=FALSE, message = FALSE}
-#display all tables and plots
+   
+#full staff overview
 self_check_data %>%
 filter(Date > start_date) %>%
 filter(Position == "Staff") %>%
 select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
-
-kable(booktabs = T ,
-		longtable=T,
-		caption=paste("Completed self checks by staff and PhD candidates 
+standard_kable(paste("Completed self checks by staff and PhD candidates 
 						  since",start_date, sep=" ", collapse=NULL),
-		position = "h")%>%
-kable_styling(latex_options = "striped") %>%
+               longtable = T)  %>%
 kable_styling(latex_options = "repeat_header") %>%
-column_spec(1,width="2cm") %>%
-column_spec(2,width="2.5cm") %>%
-column_spec(3,width="1cm") %>%
-column_spec(4,width="1cm") %>%
-column_spec(5,width="4.5cm") %>%
-column_spec(6,width="1cm") 
-
-table_by_period(data=self_check_data,
-                position="Student",            
-               rows = Department,
-              cols = Outcome,
-              start_date = start_date) %>%
-kable(booktabs = T ,
-		longtable=F,
-		caption=paste("Number of completed checks by students by department 
-						  since",start_date, sep=" ", collapse=NULL),
-		position = "h") %>%
-kable_styling(latex_options = "striped") 
+set_widths(c(2,2.5,1,1,4.5,1))
 
 
-table_by_period(data=self_check_data,
-                position="Staff",
-                rows=Month,
+#student detailed summary
+self_check_data %>%
+filter(Date > start_date) %>%
+filter(Position == "Student") %>%
+table_by_period(rows = Department,
+                cols = Outcome) %>%
+standard_kable(paste("Number of completed checks by students by department 
+						  since",start_date, sep=" ", collapse=NULL))
+
+#staff past years
+self_check_data %>%
+filter(Position == "Staff") %>%
+table_by_period(rows=Month,
                 cols = Department,
                 num_rows=12) %>%
-kable(booktabs = T, 
-		longtable=F,
-		caption="Number of completed checks by staff and PhD candidates in the last 12 months",
-		position="h") %>%
-kable_styling(latex_options = "striped") %>%
+standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 12 months") %>%
 row_spec(12,hline_after=TRUE)
 
-table_by_period(data=self_check_data,
-                position="Student",
-                rows=Month,
+#students past year
+self_check_data %>%
+filter(Position == "Student") %>%
+table_by_period(rows=Month,
                 cols = Department,
                 num_rows=12) %>%
-kable(booktabs = T, 
-		longtable=F,
-		caption="Number of completed checks by master students in the last 12 months",
-		position="h") %>%
-kable_styling(latex_options = "striped") %>%
+standard_kable(caption="Number of completed checks by master students in the last 12 months") %>%
 row_spec(12,hline_after=TRUE)
 
 ```
@@ -126,9 +108,9 @@ plot_numbers(data = self_check_data,
              title="Number of completed self-checks by staff and students")
 
 
-plot_numbers(data = self_check_data,
-             x = Quarter,
-             position="Staff",
+self_check_data %>%
+filter(Position == "Student") %>%
+plot_numbers(x = Quarter,
              type="bar",
              smooth=T,
              group = Department,

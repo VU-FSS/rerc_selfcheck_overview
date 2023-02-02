@@ -1,11 +1,9 @@
 #RERC Analysis
-#This file does some data processing on analysis on VU-FSS Research Ethics 
+#This file defines function to do some data processing of the VU-FSS Research Ethics 
 #Review Committee Self Check Data
 
-#The file is intended to be run from rerc_selfcheck_overview.rmd which compiles 
-#data into a document
-
-#The data required is downloaded in rerc_selfcheck_qualtricsdownload.R; 
+#The file is intended to be run from rerc_selfcheck_overview.rmd which calls the functions and
+#compiles the data into a document
 
 #Author: Koen Leuveld
 #June 2022
@@ -13,7 +11,6 @@
 
 library(tidyverse)
 library(lubridate)
-library(pander)
 
 #some initial variables
 departments = data.frame(Q2.6 = c("Communication Science",
@@ -23,10 +20,11 @@ departments = data.frame(Q2.6 = c("Communication Science",
                                   "Sociology"),
                          Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
-##Data Prep
-#define fuc
+#Data prep functions
 fix_dates <- function(df){
-    #function to make dates in qualtrics data usable 
+    #function to make dates in qualtrics data usable
+    #it generates Month, Quarter, Year and Acedamic Year
+    #takes raw data as argument, and outputs data with new columns 
     df %>%
     mutate(Date = as_date(ymd_hms(RecordedDate))) %>%
     mutate(Month = floor_date(Date, "month"))  %>%
@@ -53,111 +51,96 @@ compute_outcome <- function(df){
     #count the number of issues in the check
     #depends on the redesign published after 28-3-2022 
     #no valid results for checks made before that date!
+    #returns a vector of "Review Needed"/"OK"
     numissues <- apply(df, 1, 
         function(x) sum(str_detect(x, "\\(\\*\\)$"),
                           na.rm = TRUE))
 
     ifelse(numissues>0,"Review needed","OK")
-
 }
 
 cleanup <- function(df){
     #misc cleaning of data.
+    #takes raw data, and returns cleaned data
 
     #the professors string is too long to fit below
     professors <- "Postdoc / assistant / associate / full professor"
 
     df %>%
         mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
-                            Q2.4 == professors,
-                          "Staff","Student")) %>%
+                                  Q2.4 == professors,
+                                  "Staff","Student")) %>%
         mutate(Position_detailed =  Position) %>%
         mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","PhD","Staff")) %>%
         right_join(departments) %>%
         rename(Department = Dept) %>%
         mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
         rename(Project = Q2.8) %>%
-        mutate(Project = gsub("[\r\n]", " ", Project)) 
+        mutate(Project = gsub("[\r\n]", " ", Project))  %>%
+        select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
 }
 
 
-
-# self_check_all %>%
-#  fix_dates %>%
-#  filter(Date > "2023-01-01") %>%
-#  select(first_name = Q2.1_1, last_name = Q2.1_2,Position = Q2.4,dept = Q2.6, titel = "Q2.8") %>%
-#  View()
-
+crop_df <- function(df,var,n){
 #function to crop observations to last N unique observations
-filter_obs <- function(df,var,n){
+#takes a data frame, and returns the data frame 
+#cropped to the last n unique observations in var
+#if n is not specified, no cropping takes place
+#called from the table and plot functions below
     var <- enquo(var)
     if (!is.null(n)){
         
         obs_selector <- df %>%
-        select(!!var) %>%
-        unique %>%
-        tail(n=n)
-
+            select(!!var) %>%
+            unique %>%
+            tail(n=n)
 
         df %>% 
-        filter(!!var %in% obs_selector[[1]]) %>%
-        return()
+            filter(!!var %in% obs_selector[[1]]) %>%
+            return()
     } else {
         return(df)
     }
 }
 
+collapse_df <- function(dataframe,...){
+   dataframe %>%
+      group_by(...) %>%
+      summarize(N=n()) %>%
+      ungroup()
+}
+
+
+
+#Data presentation functions
+table_by_period <-
 ## function to create tables with total number of checks per deparment per time period
-## There is no error checking!!
-table_by_period <- 
-    function(data,
-             position=NULL, #Student or Staff. NULL for total
+## There is no error checking!! 
+    function(dataframe,
              num_rows = NULL, #last N periods will be included
              num_cols = NULL,
-             join=NULL, #data frame that adds one column to <PERIOD>, Department
-             cols=Department, #either departments or <PERIOD> can be used as column
-             rows=NULL,
+             cols=NULL, #either departments or <PERIOD> can be used as column
+             rows,
+             cols2 = NULL, #option extra column
              row_total=TRUE, #add a column/row with totals by deparment
-             col_total=TRUE, #add a column/row with totals by period
-             prop_col=FALSE,
-             start_date = NULL) { #add a column with proportion of checks/joined data
+             col_total=TRUE){ #add a column/row with totals by period)
 
-    df <- data 
     rows <- enquo(rows)
     cols <- enquo(cols)
+    cols2 <- enquo(cols2)
 
-    #filter position
-    if (!is.null(position)) {
-    df <-
-        df %>% 
-        filter(Position==position) 
-    }
+    dataframe <- 
+        dataframe %>%
+        collapse_df(,!!rows,!!cols,!!cols2) %>%
+        crop_df(.,!!rows,num_rows)%>%
+        crop_df(.,!!cols,num_cols)
 
-    #filter by start_date
-    if (!is.null(start_date)) {
-        df <-
-        df %>% 
-        filter(Date > start_date)  
-    }
-
-    df <- df %>%
-    group_by(!!rows, !!cols) %>%
-    summarize(N=n()) %>%
-    ungroup() %>%
-    filter_obs(.,!!rows,num_rows)%>%
-    filter_obs(.,!!cols,num_cols)
-
-    #join external data
-    if (!is.null(join)){
-        df <-
-            df %>%
-            right_join(join) 
-    }
+    print(dataframe)
 
     #row_totals
     if (row_total){
-    df <-
-        df %>%
+    dataframe <-
+        dataframe %>%
         group_by(!!rows) %>%
         bind_rows(summarise(.,
                             across(where(is.numeric),sum),
@@ -167,8 +150,8 @@ table_by_period <-
 
     #column totals
     if (col_total){
-    df <-
-        df %>%
+    dataframe <-
+        dataframe %>%
         group_by(!!cols) %>%
         bind_rows(summarise(.,
                             across(where(is.numeric),sum),
@@ -176,26 +159,41 @@ table_by_period <-
         ungroup()
     }
     
-    #compute proportions
-    #not tested
-    if (prop_col){ 
-        df <-
-            df %>% 
-            ungroup() %>%
-            mutate(Percent = round((.[,3]/.[,4]) * 100,digits=0))
-    }
-
-    df <- df %>%
-    pivot_wider(names_from = !!cols, values_from = N,!!rows,values_fill=0)
-    return(df)
+    dataframe <- dataframe %>%
+    pivot_wider(names_from = !!cols, values_from = N,!!rows)
+    return(dataframe)
 }
+
+self_check_data %>%
+table_by_period(rows=Department,
+                cols = Year,
+                cols2 = Position,
+                num_cols = 3)
+
+##Functions to format kable tables
+
+set_widths <- function(kableinput,widths){
+    for (i in 1:length(widths)) {
+        kableinput <- kableinput %>% column_spec(i,width=paste(widths[i],"cm",sep=""))
+    }
+    return(kableinput)
+}
+
+standard_kable <- function(kableinput,caption,longtable=F){
+    kableinput %>%
+    kable(booktabs = T ,
+        longtable=longtable,
+        caption=caption,
+        position = "h") %>%
+    kable_styling(latex_options = "striped")
+}   
+
 
 ## function to create line graphs
 plot_numbers <- function(data,
                          x,
                          num_x = NULL,
-                         group = NULL,
-                         position=NULL,
+                         group,
                          type="line",
                          smooth=TRUE,
                          title="") {
@@ -205,24 +203,15 @@ plot_numbers <- function(data,
     group <- enquo(group)
     x <- enquo(x)
 
-    if (!is.null(position)) {
-        df <-
-            df %>%
-            filter(Position==position)
-    }
-
-
     #summarize by group
     df <-
         df %>%
         select(!!x,!!group) %>%        
         group_by(!!x,!!group) %>%
         summarize(N = n()) %>%
-        filter_obs(.,!!x,num_x) %>%
+        crop_df(.,!!x,num_x) %>%
         ungroup()%>% 
         complete(!!x,!!group,fill=list(N=0))
-
-
     
     #plot
     plot <-
@@ -241,10 +230,6 @@ plot_numbers <- function(data,
     plot <- plot +          
             geom_smooth(method="loess",formula = y ~ x,se=FALSE)
     }
-
-    # if (group == 1){
-    #     plot <- plot + theme(legend.position = "none")
-    # }
 
     plot <- plot +
            theme(axis.text.x = element_text(angle = 90)) +
