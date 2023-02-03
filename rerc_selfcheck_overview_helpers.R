@@ -23,11 +23,11 @@ departments = data.frame(Q2.6 = c("Communication Science",
                          Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
 #Data prep functions
-fix_dates <- function(df){
+fix_dates <- function(data){
     #function to make dates in qualtrics data usable
     #it generates Month, Quarter, Year and Acedamic Year
     #takes raw data as argument, and outputs data with new columns 
-    df %>%
+    data %>%
     mutate(Date = as_date(ymd_hms(RecordedDate))) %>%
     mutate(Month = floor_date(Date, "month"))  %>%
     mutate(Year = as.character(year(Month))) %>%
@@ -49,26 +49,26 @@ fix_dates <- function(df){
                        sep="-")) 
 }
 
-compute_outcome <- function(df){
+compute_outcome <- function(data){
     #count the number of issues in the check
     #depends on the redesign published after 28-3-2022 
     #no valid results for checks made before that date!
     #returns a vector of "Review Needed"/"OK"
-    numissues <- apply(df, 1, 
+    numissues <- apply(data, 1, 
         function(x) sum(str_detect(x, "\\(\\*\\)$"),
                           na.rm = TRUE))
 
     ifelse(numissues>0,"Review needed","OK")
 }
 
-cleanup <- function(dataframe){
+cleanup <- function(data){
     #misc cleaning of data.
     #takes raw data, and returns cleaned data
 
     #the professors string is too long to fit below
     professors <- "Postdoc / assistant / associate / full professor"
 
-    dataframe %>%
+    data %>%
         mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
                                   Q2.4 == professors,
                                   "Staff","Student")) %>%
@@ -83,87 +83,123 @@ cleanup <- function(dataframe){
 }
 
 
-crop_df <- function(dataframe,var,n){
-#function to crop observations to last N unique observations
-#takes a data frame, and returns the data frame 
-#cropped to the last n unique observations in var
-#if n is not specified, no cropping takes place
-#called from the table and plot functions below
-    var <- enquo(var)
+# Data presentation functions
+
+## Helper functions used in counts_talbe
+## These keep the pipeline in counts_table clean
+
+crop_df <- function(data,var,n){
+# function to crop observations in a dataframe to observation with 
+# last N unique values in a variable
+# if n is not specified, no cropping takes place
     if (!is.null(n)){
-        
-        obs_selector <- dataframe %>%
-            select(!!var) %>%
+        #browser()
+        obs_selector <- data %>%
+            select({{var}}) %>%
+            arrange({{var}}) %>%
             unique %>%
             tail(n=n)
 
-        dataframe %>% 
-            filter(!!var %in% obs_selector[[1]]) %>%
+        data %>% 
+            filter({{var}} %in% obs_selector[[1]]) %>%
             return()
     } else {
-        return(dataframe)
+        return(data)
     }
 }
 
-collapse_df <- function(dataframe,...){
-   #browser()
-   dataframe %>%
+collapse_df <- function(data,...){
+# collapses data frame to count, grouped by variables specified
+# completes the resulting dataframe so there are no missing observations
+   data %>%
       group_by(...) %>%
       summarize(N=n()) %>%
       ungroup() %>%
       complete(fill=list(N=0),...) 
 }
 
-#Data presentation functions
+join_if <- function(data,join=NULL,rows,cols,joinvalues=NULL,propcol=NULL){
+# joins external data (e.g. on research input or output) to the counts_table
+# optionally computes a proportion column of the counts relative to the joined value
+    if (!is.null(join)){
+        data <- 
+            data %>%
+             inner_join(select(join,{{rows}},{{cols}},{{joinvalues}}))
+
+        #gives error:  object 'pct' not found
+        if (!is.null(propcol)){ 
+             data <-
+             data %>%
+             mutate( {{propcol}} := round((N/{{joinvalues}}) * 100,digits=0))
+        }
+    }
+    data
+}
+
+get_colvalues <-function(data,cols){
+#function that returns sorted unique values of a variable
+#used to sort the output of counts_table
+    data %>% 
+    select({{cols}}) %>%
+    arrange({{cols}}) %>%
+    unique %>%
+    pull()  
+}
+
+compute_totals <- function(data,vars,bool) {
+# function to compute totals per variable
+# appends rows containing sums of all numerics
+# all non-numeric, non-group, variables are set to "Total"
+# these will end up as row or column total in the final counts_table
+    if (bool){
+    data <-
+        data %>%
+        group_by({{vars}}) %>%
+        bind_rows(summarise(.,
+                            across(where(is.numeric),sum),
+                            across(where(is.character), ~"Total"))) %>%
+        ungroup()
+    }
+    data
+}
+
+
+
+
 counts_table <-
 ## function to create tables with total number of checks per deparment per time period
 ## There is no error checking!! 
-    function(dataframe,
+    function(data,
              num_rows = NULL, #last N periods will be included
              num_cols = NULL,
              cols=NULL, #either departments or <PERIOD> can be used as column
              rows,
-             cols2 = NULL, #option extra column
              row_total=TRUE, #add a column/row with totals by deparment
-             col_total=TRUE){ #add a column/row with totals by period)
+             col_total=TRUE,
+             join=NULL, #object to join
+             joinvalues = NULL,
+             propcol = NULL) { #name of colum containing percentages 
 
-    rows <- enquo(rows)
-    cols <- enquo(cols)
-    cols2 <- enquo(cols2)
-
-    dataframe <- 
-        dataframe %>%
-        collapse_df(!!rows,!!cols,!!cols2) %>%
-        crop_df(.,!!rows,num_rows)%>%
-        crop_df(.,!!cols,num_cols)
-
-    #row_totals
-    if (row_total){
-    dataframe <-
-        dataframe %>%
-        group_by(!!rows) %>%
-        bind_rows(summarise(.,
-                            across(where(is.numeric),sum),
-                            across(c(!!cols,!!cols2), ~"Total"))) %>%
-        ungroup()
-    }
+    #get the unique column values, for sorting the table later
+    colvalues <- 
+        data %>% 
+        get_colvalues({{cols}})
     
-
-    #column totals
-    if (col_total){
-    dataframe <-
-        dataframe %>%
-        group_by(!!cols) %>%
-        bind_rows(summarise(.,
-                            across(where(is.numeric),sum),
-                            across(c(!!rows, !!cols2), ~"Total"))) %>%
-        ungroup()
-    }
-    
-    dataframe <- dataframe %>%
-    pivot_wider(names_from = c(!!cols,!!cols2), values_from = N)
-    return(dataframe)
+    #process the data by piping the custom function defined above
+    data %>%
+    collapse_df({{rows}},{{cols}})  %>%
+    join_if(join = join,rows = {{rows}}, cols = {{cols}},
+            joinvalues = {{joinvalues}},propcol=propcol) %>%
+    crop_df(.,{{rows}},num_rows) %>%
+    crop_df(.,{{cols}},num_cols) %>%
+    compute_totals({{rows}},row_total) %>%
+    compute_totals({{cols}},col_total) %>%
+    pivot_wider(names_from = c({{cols}}), 
+                values_from = c(N,{{joinvalues}},{{propcol}})) %>%
+    relocate(ends_with(colvalues),.after=last_col()) %>%
+    relocate(ends_with("Total"),.after=last_col())
 }
+
 
 ##Functions to format kable tables
 set_widths <- function(kableinput,widths){

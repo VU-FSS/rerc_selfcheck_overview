@@ -6,3 +6,4 @@ check_for_name.R
 *.sublime-workspace
 *.sublime-project
 *.log
+testing.r
