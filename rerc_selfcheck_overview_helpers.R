@@ -13,6 +13,7 @@
 
 library(tidyverse)
 library(lubridate)
+library(rlang)
 
 #some initial variables
 departments = data.frame(Q2.6 = c("Communication Science",
@@ -120,21 +121,15 @@ collapse_df <- function(data,...){
 
 join_if <- function(data,join=NULL,rows,cols,joinvalues=NULL,propcol=NULL){
 # joins external data (e.g. on research input or output) to the counts_table
-# optionally computes a proportion column of the counts relative to the joined value
     if (!is.null(join)){
         data <- 
             data %>%
              inner_join(select(join,{{rows}},{{cols}},{{joinvalues}}))
-
-        #gives error:  object 'pct' not found
-        if (!is.null(propcol)){ 
-             data <-
-             data %>%
-             mutate( {{propcol}} := round((N/{{joinvalues}}) * 100,digits=0))
-        }
     }
     data
 }
+
+
 
 get_colvalues <-function(data,cols){
 #function that returns sorted unique values of a variable
@@ -163,8 +158,15 @@ compute_totals <- function(data,vars,bool) {
     data
 }
 
-
-
+compute_propcol <- function(data,propcol,joinvalues) {
+# computes a proportion column of the counts relative to the joined value
+    if (!is.null(quo_get_expr(enquo(propcol)))){
+         data <-
+             data %>%
+             mutate( {{propcol}} := round((N/{{joinvalues}}) * 100,digits=0))
+    }
+    data
+}
 
 counts_table <-
 ## function to create tables with total number of checks per deparment per time period
@@ -189,11 +191,12 @@ counts_table <-
     data %>%
     collapse_df({{rows}},{{cols}})  %>%
     join_if(join = join,rows = {{rows}}, cols = {{cols}},
-            joinvalues = {{joinvalues}},propcol=propcol) %>%
+            joinvalues = {{joinvalues}},propcol={{propcol}}) %>%
     crop_df(.,{{rows}},num_rows) %>%
     crop_df(.,{{cols}},num_cols) %>%
     compute_totals({{rows}},row_total) %>%
     compute_totals({{cols}},col_total) %>%
+    compute_propcol({{propcol}},{{joinvalues}}) %>%
     pivot_wider(names_from = c({{cols}}), 
                 values_from = c(N,{{joinvalues}},{{propcol}})) %>%
     relocate(ends_with(colvalues),.after=last_col()) %>%
