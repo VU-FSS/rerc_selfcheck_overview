@@ -1,5 +1,5 @@
 Register Qualtrics Credentials.R
-data/*.csv
+data/personal/*.*
 check_for_name.R
 .gitignore
 *.pdf

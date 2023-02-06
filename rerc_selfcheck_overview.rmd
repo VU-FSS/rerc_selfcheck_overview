@@ -41,7 +41,7 @@ source("rerc_selfcheck_overview_helpers.r")
 
 #laod and clean data
 self_check_data <- 
-    read_csv("data/self_check_all.csv") %>%
+    read_csv("data/personal/self_check_all.csv") %>%
     fix_dates %>%
     add_column(Outcome = compute_outcome(.))%>%
     cleanup()

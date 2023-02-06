@@ -17,7 +17,7 @@ self_check_all_raw <- fetch_survey(surveyID = "SV_6hCj2czIWzboW6V",
 
 
 self_check_all <- self_check_all_raw[self_check_all_raw$Finished,]
-write.csv(self_check_all,"data/self_check_all.csv", row.names = TRUE)
+write.csv(self_check_all,"data/personal/self_check_all.csv", row.names = TRUE)
 
 full_review_all_raw <- fetch_survey(surveyID = "SV_9tBjPqFq6bxv2Sx", 
                         start_date = "1900-01-01",
@@ -26,5 +26,5 @@ full_review_all_raw <- fetch_survey(surveyID = "SV_9tBjPqFq6bxv2Sx",
                         force_request=TRUE)
 
 full_review_all <- full_review_all_raw[full_review_all_raw$Finished,]
-write.csv(full_review_all,"data/full_review.csv", row.names = TRUE)
+write.csv(full_review_all,"data/personal/full_review.csv", row.names = TRUE)
 
