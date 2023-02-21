@@ -25,8 +25,8 @@ library(knitr)
 library(kableExtra)
 
 #user defined variables:
-start_date <- "2023-01-01"
-setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
+start_date <- "2023-01-23" #2023-02-21
+#setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- T
 
 
@@ -45,6 +45,11 @@ self_check_data <-
     fix_dates %>%
     add_column(Outcome = compute_outcome(.))%>%
     cleanup()
+
+sep_tables <- 
+    read_csv("data/administrative/SEP_tabellen.csv") %>%
+    rename(FTE =`Research Time`) %>%
+    mutate(Year = as.character(Year))
     
 ```
 
@@ -78,18 +83,18 @@ self_check_data %>%
 filter(Position == "Staff") %>%
 counts_table(rows=Month,
                 cols = Department,
-                num_rows=12) %>%
-standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 12 months") %>%
-row_spec(12,hline_after=TRUE)
+                num_rows=14) %>%
+standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
+row_spec(14,hline_after=TRUE)
 
 #students past year
 self_check_data %>%
 filter(Position == "Student") %>%
 counts_table(rows=Month,
                 cols = Department,
-                num_rows=12) %>%
-standard_kable(caption="Number of completed checks by master students in the last 12 months") %>%
-row_spec(12,hline_after=TRUE)
+                num_rows=13) %>%
+standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
+row_spec(14,hline_after=TRUE)
 
 ```
 
@@ -100,6 +105,7 @@ row_spec(12,hline_after=TRUE)
 
 #plot the number of self-checks by staff and students
 self_check_data %>%
+   crop_df(Month,48) %>%
    collapse_df(Month,Position) %>%
    ggplot(aes(x=Month, y=N, group=Position,color=Position,fill=Position)) +
       geom_line() +          
@@ -118,5 +124,33 @@ self_check_data %>%
       theme(axis.text.x = element_text(angle = 90)) +
       ggtitle("Number of completed self-checks by staff") 
 
+
+```
+
+```{r echo=FALSE, message = F}
+#staff compared to FTE
+self_check_data %>%
+filter(Position == "Staff") %>%
+counts_table(rows=Department,
+             cols = Year,
+             num_cols=3,
+             join = sep_tables,
+             joinvalues = FTE,
+             propcol = pct,
+             row_total=F) %>%
+kable(booktabs = T, 
+      longtable=F,
+      caption="Number of completed checks (N) by staff and total research time (FTE) by department",
+      position="h",
+      #align = c("l",
+      #              rep(c("r","r","r"),3)),
+      col.names = c("Dept",
+                    rep(c("N","FTE","%"),3))) %>%
+kable_styling(latex_options = "striped") %>%
+row_spec(5,hline_after=TRUE) %>%
+add_header_above(header = c(" " = 1,
+                          "2019" =3,
+                          "2020" =3,
+                          "2021" =3))
 
 ```

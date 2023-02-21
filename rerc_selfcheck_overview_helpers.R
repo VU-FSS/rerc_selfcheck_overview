@@ -228,3 +228,40 @@ standard_kable <- function(kableinput,caption,longtable=F){
         position = "h") %>%
     kable_styling(latex_options = "striped")
 }   
+
+
+
+double_counts_table <-
+## function to create tables with total number of checks per deparment per time period
+## There is no error checking!! 
+    function(data,
+             num_rows = NULL, #last N periods will be included
+             num_cols = NULL,
+             cols=NULL, #either departments or <PERIOD> can be used as column
+             rows,
+             row_total=TRUE, #add a column/row with totals by deparment
+             col_total=TRUE,
+             join=NULL, #object to join
+             joinvalues = NULL,
+             propcol = NULL) { #name of colum containing percentages 
+
+    #get the unique column values, for sorting the table later
+    colvalues <- 
+        data %>% 
+        get_colvalues({{cols}})
+    
+    #process the data by piping the custom function defined above
+    data %>%
+    collapse_df({{rows}},{{cols}})  %>%
+    join_if(join = join,rows = {{rows}}, cols = {{cols}},
+            joinvalues = {{joinvalues}},propcol={{propcol}}) %>%
+    crop_df(.,{{rows}},num_rows) %>%
+    crop_df(.,{{cols}},num_cols) %>%
+    compute_totals({{rows}},row_total) %>%
+    compute_totals({{cols}},col_total) %>%
+    compute_propcol({{propcol}},{{joinvalues}}) %>%
+    pivot_wider(names_from = c({{cols}}), 
+                values_from = c(N,{{joinvalues}},{{propcol}})) %>%
+    relocate(ends_with(colvalues),.after=last_col()) %>%
+    relocate(ends_with("Total"),.after=last_col())
+}
