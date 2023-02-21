@@ -25,7 +25,7 @@ library(knitr)
 library(kableExtra)
 
 #user defined variables:
-start_date <- "2023-01-01"
+start_date <- "2023-01-23" #2023-02-21
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- T
 
@@ -78,18 +78,18 @@ self_check_data %>%
 filter(Position == "Staff") %>%
 counts_table(rows=Month,
                 cols = Department,
-                num_rows=12) %>%
-standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 12 months") %>%
-row_spec(12,hline_after=TRUE)
+                num_rows=14) %>%
+standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
+row_spec(14,hline_after=TRUE)
 
 #students past year
 self_check_data %>%
 filter(Position == "Student") %>%
 counts_table(rows=Month,
                 cols = Department,
-                num_rows=12) %>%
-standard_kable(caption="Number of completed checks by master students in the last 12 months") %>%
-row_spec(12,hline_after=TRUE)
+                num_rows=14) %>%
+standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
+row_spec(14,hline_after=TRUE)
 
 ```
 
@@ -101,6 +101,7 @@ row_spec(12,hline_after=TRUE)
 #plot the number of self-checks by staff and students
 self_check_data %>%
    collapse_df(Month,Position) %>%
+   crop_df(Month,48) %>%
    ggplot(aes(x=Month, y=N, group=Position,color=Position,fill=Position)) +
       geom_line() +          
       geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
