@@ -25,7 +25,7 @@ library(knitr)
 library(kableExtra)
 
 #user defined variables:
-start_date <- "2023-01-23" #2023-02-21
+start_date <- "2023-02-21" #2023-03-23
 #setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- T
 
@@ -127,11 +127,11 @@ self_check_data %>%
 
 ```
 
-```{r echo=FALSE, message = F}
+<!-- ```{r echo=FALSE, message = F}
 #staff compared to FTE
 self_check_data %>%
 filter(Position == "Staff") %>%
-counts_table(rows=Department,
+double_counts_table(rows=Department,
              cols = Year,
              num_cols=3,
              join = sep_tables,
@@ -142,8 +142,6 @@ kable(booktabs = T,
       longtable=F,
       caption="Number of completed checks (N) by staff and total research time (FTE) by department",
       position="h",
-      #align = c("l",
-      #              rep(c("r","r","r"),3)),
       col.names = c("Dept",
                     rep(c("N","FTE","%"),3))) %>%
 kable_styling(latex_options = "striped") %>%
@@ -153,4 +151,4 @@ add_header_above(header = c(" " = 1,
                           "2020" =3,
                           "2021" =3))
 
-```
+``` -->

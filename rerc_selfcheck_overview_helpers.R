@@ -230,7 +230,6 @@ standard_kable <- function(kableinput,caption,longtable=F){
 }   
 
 
-
 double_counts_table <-
 ## function to create tables with total number of checks per deparment per time period
 ## There is no error checking!! 
