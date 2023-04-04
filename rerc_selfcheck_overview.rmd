@@ -25,7 +25,7 @@ library(knitr)
 library(kableExtra)
 
 #user defined variables:
-start_date <- "2023-01-23" #2023-02-21
+start_date <- "2023-02-21" #2023-03-23
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- T
 
