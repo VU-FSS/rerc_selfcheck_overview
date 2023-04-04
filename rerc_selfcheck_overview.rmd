@@ -23,11 +23,12 @@ processed using functions as defined rerc_selfcheck_analysis.R
 ```{r, include=FALSE}
 library(knitr)
 library(kableExtra)
+library(janitor)
 
 #user defined variables:
 start_date <- "2023-02-21" #2023-03-23
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- T
+download_data <- F
 
 
 #Download data to update CSV files used by RERC_analysis.r
@@ -66,30 +67,76 @@ set_widths(c(2,2.5,1,1,4.5,1))
 self_check_data %>%
 filter(Date > start_date) %>%
 filter(Position == "Student") %>%
-counts_table(rows = Department,
-             cols = Outcome) %>%
+tabyl(Department,Outcome) %>%
+adorn_totals(where="col")  %>%
 standard_kable(paste("Number of completed checks by students by department 
-						  since",start_date, sep=" ", collapse=NULL)) %>%
+                    since",start_date, sep=" ", collapse=NULL)) %>%
 row_spec(5,hline_after=TRUE)
+
+
 
 
 #staff past year
 self_check_data %>%
 filter(Position == "Staff") %>%
-counts_table(rows=Month,
-                cols = Department,
-                num_rows=14) %>%
+crop_df(Month,14) %>%
+tabyl(Month,Department)%>%
+adorn_totals(where=c("row","col")) %>%
 standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
 row_spec(14,hline_after=TRUE)
+
 
 #students past year
 self_check_data %>%
 filter(Position == "Student") %>%
-counts_table(rows=Month,
-                cols = Department,
-                num_rows=14) %>%
+crop_df(Month,14) %>%
+tabyl(Month,Department)%>%
+adorn_totals(where=c("row","col")) %>%
 standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
 row_spec(14,hline_after=TRUE)
+
+
+
+sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
+   rename(FTE =`Research Time`) %>%
+   mutate(Year = as.character(Year))
+
+
+gen_propcol <- function(data) {
+   cols <- names(data)[2:length(names(data))]
+
+   cols <- as_tibble(cols)
+
+   tibble <- 
+   separate_wider_delim(cols, cols=value,delim="_",names=c("col","year"))
+
+   years <- unique(tibble$year)
+   print(years)
+   cols <- unique(tibble$col)
+   print(cols)
+
+   data[,paste(cols[1],years[1],sep="_")] / data[,paste(cols[2],years[1],sep="_")]
+
+}
+
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   crop_df(Year,4) %>%
+   tabyl(Year,Department) %>%
+   pivot_longer(cols = !Year,names_to="Department", values_to = "N") %>%
+   inner_join(select(sep,Department,Year,FTE)) %>%
+   #mutate(prop = N/FTE) %>%
+   pivot_wider(names_from = Year, values_from = c(N,FTE)) %>%
+   adorn_totals() %>%
+   gen_propcol()
+
+
+cols <- names(burp)[2:length(names(burp))]
+cols <- as_tibble(cols)
+
+separate_wider_delim(cols,cols=value,delim="_",names=c("col","year"))
+
+
 
 ```
 
