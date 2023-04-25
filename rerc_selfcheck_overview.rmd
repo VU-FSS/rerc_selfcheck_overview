@@ -40,6 +40,7 @@ if (download_data) {
 source("rerc_selfcheck_overview_helpers.r")
 
 
+
 #laod and clean data
 self_check_data <- 
     read_csv("data/self_check_all.csv") %>%
@@ -104,7 +105,6 @@ sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
 
 gen_propcol <- function(data) {
    cols <- names(data)[2:length(names(data))]
-
    cols <- as_tibble(cols)
 
    tibble <- 
@@ -119,16 +119,42 @@ gen_propcol <- function(data) {
 
 }
 
+
+order_columns <- function(data) {
+   years <- 
+      data %>%
+      names %>%
+      as_tibble %>%
+      slice(2:n()) %>%
+      separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
+      select(year) %>%
+      unique %>%
+      as.vector
+
+   print(years)
+   relocate(data,ends_with(years),.after=last_col())
+}
+
+years <- 
+   test %>%
+   names %>%
+   as_tibble %>%
+   slice(2:n()) %>%
+   separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
+   select(year) %>%
+   unique %>%
+   as.vector
+
 self_check_data %>%
    filter(Position == "Staff") %>%
    crop_df(Year,4) %>%
    tabyl(Year,Department) %>%
    pivot_longer(cols = !Year,names_to="Department", values_to = "N") %>%
    inner_join(select(sep,Department,Year,FTE)) %>%
-   #mutate(prop = N/FTE) %>%
-   pivot_wider(names_from = Year, values_from = c(N,FTE)) %>%
-   adorn_totals() %>%
-   gen_propcol()
+   compute_totals(Year) %>%
+   mutate(prop = N/FTE) %>%
+   pivot_wider(names_from = Year, values_from = c(N,FTE,prop))%>%
+   order_columns
 
 
 cols <- names(burp)[2:length(names(burp))]

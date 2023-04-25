@@ -146,7 +146,7 @@ get_colvalues <-function(data,cols){
     pull()  
 }
 
-compute_totals <- function(data,vars,bool) {
+compute_totals <- function(data,vars,bool=TRUE) {
 # function to compute totals per variable
 # appends rows containing sums of all numerics
 # all non-numeric, non-group, variables are set to "Total"
