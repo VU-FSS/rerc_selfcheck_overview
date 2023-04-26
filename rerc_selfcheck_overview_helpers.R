@@ -14,40 +14,28 @@
 library(tidyverse)
 library(lubridate)
 
-#some initial variables
-departments = data.frame(Q2.6 = c("Communication Science",
-                                  "Organization Sciences",
-                                  "Public Administration and Political Science",
-                                  "Social and Cultural Anthropology",
-                                  "Sociology"),
-                         Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
-#Data prep functions
-fix_dates <- function(data){
-    #function to make dates in qualtrics data usable
-    #it generates Month, Quarter, Year and Acedamic Year
-    #takes raw data as argument, and outputs data with new columns 
-    data %>%
-    mutate(Date = as_date(ymd_hms(RecordedDate))) %>%
-    mutate(Month = floor_date(Date, "month"))  %>%
-    mutate(Year = as.character(year(Month))) %>%
+#date helpers
+academic_year <- function(data){
+#takes a date, and outputs the academic year, e.g. "2022-2023"
+      year1 = year(data) - ifelse(month(data) >= 9,0,1)
+      year2 = year1 + 1
 
-    #quarter
-    mutate(Quarter = paste(year(Month),
-                           ceiling(month(Month)/3),
-                           sep="-")) %>%
-
-    #academic year
-    mutate(sept = ifelse(month(Month)>=9,0,1)) %>%
-    mutate(Academic_Year = year(Month) - sept ) %>%
-    mutate(Academic_Year = paste(Academic_Year,Academic_Year+1,sep="-")) %>%
-    select(-sept)  %>%
-
-    #month
-    mutate(Month=paste(Year,
-                       str_pad(month(Month),2,pad="0"),
-                       sep="-")) 
+      paste(year1,year2,sep="-")
 }
+
+year_quarter <- function(data){
+   paste(year(data),ceiling(month(data)/3),sep="-")
+}
+
+year_month <- function(data){
+#takes a date and outputs a string that combines year and month, e.g. "2023-2"
+    paste(year(data),
+          str_pad(month(data),2,pad="0"),
+          sep="-")
+}
+
+
 
 compute_outcome <- function(data){
     #count the number of issues in the check
@@ -59,27 +47,6 @@ compute_outcome <- function(data){
                           na.rm = TRUE))
 
     ifelse(numissues>0,"Review needed","OK")
-}
-
-cleanup <- function(data){
-    #misc cleaning of data.
-    #takes raw data, and returns cleaned data
-
-    #the professors string is too long to fit below
-    professors <- "Postdoc / assistant / associate / full professor"
-
-    data %>%
-        mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
-                                  Q2.4 == professors,
-                                  "Staff","Student")) %>%
-        mutate(Position_detailed =  Position) %>%
-        mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","PhD","Staff")) %>%
-        right_join(departments) %>%
-        rename(Department = Dept) %>%
-        mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
-        rename(Project = Q2.8) %>%
-        mutate(Project = gsub("[\r\n]", " ", Project))  %>%
-        select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
 }
 
 

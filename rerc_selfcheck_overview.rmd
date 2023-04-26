@@ -26,7 +26,7 @@ library(kableExtra)
 library(janitor)
 
 #user defined variables:
-start_date <- "2023-02-21" #2023-03-23
+start_date <- "2023-03-23" #"2023-04-26"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- F
 
@@ -42,17 +42,54 @@ source("rerc_selfcheck_overview_helpers.r")
 
 
 #laod and clean data
+departments = data.frame(Q2.6 = c("Communication Science",
+                                  "Organization Sciences",
+                                  "Public Administration and Political Science",
+                                  "Social and Cultural Anthropology",
+                                  "Sociology"),
+                         Dept=c("COM","ORG","PSPA","SCA","SOC"))
+
+
 self_check_data <- 
-    read_csv("data/self_check_all.csv") %>%
-    fix_dates %>%
-    add_column(Outcome = compute_outcome(.))%>%
-    cleanup()
+   read_csv("data/self_check_all.csv") %>%
+   
+   #dates:
+   add_column(Date = as_date(ymd_hms(.$RecordedDate))) %>%
+   add_column(Academic_Year = academic_year(.$RecordedDate)) %>%
+   add_column(Year = as.character(year(.$RecordedDate))) %>%
+   add_column(Quarter = year_quarter(.$RecordedDate)) %>%
+   add_column(Month = year_month(.$RecordedDate)) %>%
+
+   #outcome
+   add_column(Outcome = compute_outcome(.)) %>%
+
+   #misc cleaning
+   mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
+                            Q2.4 == "Postdoc / assistant / associate / full professor",
+                            "Staff","Student")) %>%
+   mutate(Position_detailed =  Position) %>%
+   mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","PhD","Staff")) %>%
+   right_join(departments) %>%
+   rename(Department = Dept) %>%
+   mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
+   rename(Project = Q2.8) %>%
+   mutate(Project = gsub("[\r\n]", " ", Project))  %>%
+   select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
+
+
+
+
+
 
 
 sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
    crop_df(Year,3) %>%
    rename(FTE =`Research Time`) %>%
    mutate(Year = as.character(Year))
+
+
+student_numbers <-   read_csv("annual_report/Studenten_tabellen.csv") %>%
+   crop_df(Academic_Year,3) 
     
 ```
 
@@ -60,43 +97,43 @@ sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
    
 #full staff overview
 self_check_data %>%
-filter(Date > start_date) %>%
-filter(Position == "Staff") %>%
-select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
-standard_kable(paste("Completed self checks by staff and PhD candidates 
-						  since",start_date, sep=" ", collapse=NULL),
-               longtable = T)  %>%
-kable_styling(latex_options = "repeat_header") %>%
-set_widths(c(2,2.5,1,1,4.5,1))
+   filter(Date > start_date) %>%
+   filter(Position == "Staff") %>%
+   select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
+   standard_kable(paste("Completed self checks by staff and PhD candidates 
+   						  since",start_date, sep=" ", collapse=NULL),
+                  longtable = T)  %>%
+   kable_styling(latex_options = "repeat_header") %>%
+   set_widths(c(2,2.5,1,1,4.5,1))
 
 
 #student detailed summary
 self_check_data %>%
-filter(Date > start_date) %>%
-filter(Position == "Student") %>%
-tabyl(Department,Outcome) %>%
-adorn_totals(where="col")  %>%
-standard_kable(paste("Number of completed checks by students by department 
-                    since",start_date, sep=" ", collapse=NULL)) %>%
-row_spec(5,hline_after=TRUE)
+   filter(Date > start_date) %>%
+   filter(Position == "Student") %>%
+   tabyl(Department,Outcome) %>%
+   adorn_totals(where="col")  %>%
+   standard_kable(paste("Number of completed checks by students by department 
+                       since",start_date, sep=" ", collapse=NULL)) %>%
+   row_spec(5,hline_after=TRUE)
 
 #staff past year
 self_check_data %>%
-filter(Position == "Staff") %>%
-crop_df(Month,14) %>%
-tabyl(Month,Department)%>%
-adorn_totals(where=c("row","col")) %>%
-standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
-row_spec(14,hline_after=TRUE)
+   filter(Position == "Staff") %>%
+   crop_df(Month,14) %>%
+   tabyl(Month,Department)%>%
+   adorn_totals(where=c("row","col")) %>%
+   standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
+   row_spec(14,hline_after=TRUE)
 
 #students past year
 self_check_data %>%
-filter(Position == "Student") %>%
-crop_df(Month,14) %>%
-tabyl(Month,Department)%>%
-adorn_totals(where=c("row","col")) %>%
-standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
-row_spec(14,hline_after=TRUE)
+   filter(Position == "Student") %>%
+   crop_df(Month,14) %>%
+   tabyl(Month,Department)%>%
+   adorn_totals(where=c("row","col")) %>%
+   standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
+   row_spec(14,hline_after=TRUE)
 
 
 #with FTE
@@ -109,7 +146,20 @@ self_check_data %>%
    mutate(prop = N/FTE * 100) %>%
    pivot_wider(names_from = Year, values_from = c(N,FTE,prop))%>%
    order_columns_by_year %>%
-   make_double_header_table(caption = "Number of completed checks by staff compared to research FTE, by department",colnames = c("N","FTE","%"))
+   make_double_header_table(caption = "Number of completed checks by staff (N) compared to research FTE, by department",colnames = c("N","FTE","%"))
+
+
+self_check_data %>%
+   filter(Position == "Student") %>%
+   tabyl(Academic_Year,Department) %>%
+   pivot_longer(cols = !Academic_Year,names_to="Department", values_to = "N") %>%
+   inner_join(student_numbers) %>%
+   compute_totals(Academic_Year) %>%
+   mutate(prop = N/Students * 100) %>%
+   pivot_wider(names_from = Academic_Year, values_from = c(N,Students,prop))%>%
+   order_columns_by_year %>%
+   make_double_header_table(caption = "Number of completed checks by students (N) compared to total student numbers (Stud.), by department",colnames = c("N","Stud.","%"))
+
 
 ```
 
