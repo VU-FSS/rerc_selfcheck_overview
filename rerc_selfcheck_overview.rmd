@@ -28,7 +28,7 @@ library(janitor)
 #user defined variables:
 start_date <- "2023-03-23" #"2023-04-26"
 setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
-download_data <- F
+download_data <- T
 
 
 #Download data to update CSV files used by RERC_analysis.r
@@ -49,11 +49,10 @@ departments = data.frame(Q2.6 = c("Communication Science",
                                   "Sociology"),
                          Dept=c("COM","ORG","PSPA","SCA","SOC"))
 
-
 self_check_data <- 
-   read_csv("data/self_check_all.csv") %>%
+   read_csv("data/personal/self_check_all.csv") %>%
    
-   #dates:
+   #dates
    add_column(Date = as_date(ymd_hms(.$RecordedDate))) %>%
    add_column(Academic_Year = academic_year(.$RecordedDate)) %>%
    add_column(Year = as.character(year(.$RecordedDate))) %>%
@@ -76,19 +75,12 @@ self_check_data <-
    mutate(Project = gsub("[\r\n]", " ", Project))  %>%
    select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
 
-
-
-
-
-
-
-sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
+sep <- read_csv("data/admin/SEP_tabellen.csv") %>%
    crop_df(Year,3) %>%
    rename(FTE =`Research Time`) %>%
    mutate(Year = as.character(Year))
 
-
-student_numbers <-   read_csv("annual_report/Studenten_tabellen.csv") %>%
+student_numbers <-   read_csv("data/admin/Studenten_tabellen.csv") %>%
    crop_df(Academic_Year,3) 
     
 ```
