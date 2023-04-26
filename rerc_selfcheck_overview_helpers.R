@@ -83,11 +83,7 @@ cleanup <- function(data){
 }
 
 
-# Data presentation functions
-
-## Helper functions used in counts_talbe
-## These keep the pipeline in counts_table clean
-
+## Data presentation functions
 crop_df <- function(data,var,n){
 # function to crop observations in a dataframe to observation with 
 # last N unique values in a variable
@@ -118,33 +114,6 @@ collapse_df <- function(data,...){
       complete(fill=list(N=0),...) 
 }
 
-join_if <- function(data,join=NULL,rows,cols,joinvalues=NULL,propcol=NULL){
-# joins external data (e.g. on research input or output) to the counts_table
-# optionally computes a proportion column of the counts relative to the joined value
-    if (!is.null(join)){
-        data <- 
-            data %>%
-             inner_join(select(join,{{rows}},{{cols}},{{joinvalues}}))
-
-        #gives error:  object 'pct' not found
-        if (!is.null(propcol)){ 
-             data <-
-             data %>%
-             mutate( {{propcol}} := round((N/{{joinvalues}}) * 100,digits=0))
-        }
-    }
-    data
-}
-
-get_colvalues <-function(data,cols){
-#function that returns sorted unique values of a variable
-#used to sort the output of counts_table
-    data %>% 
-    select({{cols}}) %>%
-    arrange({{cols}}) %>%
-    unique %>%
-    pull()  
-}
 
 compute_totals <- function(data,vars,bool=TRUE) {
 # function to compute totals per variable
@@ -162,44 +131,6 @@ compute_totals <- function(data,vars,bool=TRUE) {
     }
     data
 }
-
-
-
-
-counts_table <-
-## function to create tables with total number of checks per deparment per time period
-## There is no error checking!! 
-    function(data,
-             num_rows = NULL, #last N periods will be included
-             num_cols = NULL,
-             cols=NULL, #either departments or <PERIOD> can be used as column
-             rows,
-             row_total=TRUE, #add a column/row with totals by deparment
-             col_total=TRUE,
-             join=NULL, #object to join
-             joinvalues = NULL,
-             propcol = NULL) { #name of colum containing percentages 
-
-    #get the unique column values, for sorting the table later
-    colvalues <- 
-        data %>% 
-        get_colvalues({{cols}})
-    
-    #process the data by piping the custom function defined above
-    data %>%
-    collapse_df({{rows}},{{cols}})  %>%
-    join_if(join = join,rows = {{rows}}, cols = {{cols}},
-            joinvalues = {{joinvalues}},propcol=propcol) %>%
-    crop_df(.,{{rows}},num_rows) %>%
-    crop_df(.,{{cols}},num_cols) %>%
-    compute_totals({{rows}},row_total) %>%
-    compute_totals({{cols}},col_total) %>%
-    pivot_wider(names_from = c({{cols}}), 
-                values_from = c(N,{{joinvalues}},{{propcol}})) %>%
-    relocate(ends_with(colvalues),.after=last_col()) %>%
-    relocate(ends_with("Total"),.after=last_col())
-}
-
 
 ##Functions to format kable tables
 set_widths <- function(kableinput,widths){
@@ -224,4 +155,50 @@ standard_kable <- function(kableinput,caption,longtable=F){
         caption=caption,
         position = "h") %>%
     kable_styling(latex_options = "striped")
+}
+
+
+##functions for the double headers
+get_years <- function(data) {
+#this function extracts the year-component out of combined column names
+#e.g. N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022  -> 2021,2021
+   data %>%
+   names %>%
+   as_tibble %>%
+   slice(2:n()) %>%
+   separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
+   select(year) %>%
+   unique %>%
+   as_vector   
+}
+
+order_columns_by_year <- function(data) {
+#a litte function to order combined columns by year
+#e.g. N_2021 N_2022  FTE_2021 FTE_2022 pct_2021 pct_2022 ->
+#     N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022 
+   years <- get_years(data)
+   relocate(data,ends_with(years),.after=last_col())
+}
+
+
+make_double_header_table <- function(data,caption,colnames = c("N","FTE","%")) {
+
+   years <- get_years(data)
+   num_years = length(years)
+
+   top_col_spec <- tibble(year = c("",years), n = c(1,rep(3,num_years)))
+
+   data %>%
+      kable(digits = 1,
+            booktabs = T, 
+            longtable=F,
+            caption=caption,
+            position="h",
+            align = c("l",
+                          rep(c("r","r","r"),num_years)),
+            col.names = c("Department",
+                          rep(colnames,num_years))) %>%
+      kable_styling(latex_options = "striped") %>%
+      row_spec(5,hline_after=TRUE) %>%
+      add_header_above(header = top_col_spec)
 }   

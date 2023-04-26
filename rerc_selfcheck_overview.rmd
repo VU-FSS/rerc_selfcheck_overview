@@ -47,6 +47,12 @@ self_check_data <-
     fix_dates %>%
     add_column(Outcome = compute_outcome(.))%>%
     cleanup()
+
+
+sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
+   crop_df(Year,3) %>%
+   rename(FTE =`Research Time`) %>%
+   mutate(Year = as.character(Year))
     
 ```
 
@@ -74,9 +80,6 @@ standard_kable(paste("Number of completed checks by students by department
                     since",start_date, sep=" ", collapse=NULL)) %>%
 row_spec(5,hline_after=TRUE)
 
-
-
-
 #staff past year
 self_check_data %>%
 filter(Position == "Staff") %>%
@@ -85,7 +88,6 @@ tabyl(Month,Department)%>%
 adorn_totals(where=c("row","col")) %>%
 standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
 row_spec(14,hline_after=TRUE)
-
 
 #students past year
 self_check_data %>%
@@ -97,72 +99,17 @@ standard_kable(caption="Number of completed checks by master students in the las
 row_spec(14,hline_after=TRUE)
 
 
-
-sep <- read_csv("annual_report/SEP_tabellen.csv") %>%
-   rename(FTE =`Research Time`) %>%
-   mutate(Year = as.character(Year))
-
-
-gen_propcol <- function(data) {
-   cols <- names(data)[2:length(names(data))]
-   cols <- as_tibble(cols)
-
-   tibble <- 
-   separate_wider_delim(cols, cols=value,delim="_",names=c("col","year"))
-
-   years <- unique(tibble$year)
-   print(years)
-   cols <- unique(tibble$col)
-   print(cols)
-
-   data[,paste(cols[1],years[1],sep="_")] / data[,paste(cols[2],years[1],sep="_")]
-
-}
-
-
-order_columns <- function(data) {
-   years <- 
-      data %>%
-      names %>%
-      as_tibble %>%
-      slice(2:n()) %>%
-      separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
-      select(year) %>%
-      unique %>%
-      as.vector
-
-   print(years)
-   relocate(data,ends_with(years),.after=last_col())
-}
-
-years <- 
-   test %>%
-   names %>%
-   as_tibble %>%
-   slice(2:n()) %>%
-   separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
-   select(year) %>%
-   unique %>%
-   as.vector
-
+#with FTE
 self_check_data %>%
    filter(Position == "Staff") %>%
-   crop_df(Year,4) %>%
    tabyl(Year,Department) %>%
    pivot_longer(cols = !Year,names_to="Department", values_to = "N") %>%
    inner_join(select(sep,Department,Year,FTE)) %>%
    compute_totals(Year) %>%
-   mutate(prop = N/FTE) %>%
+   mutate(prop = N/FTE * 100) %>%
    pivot_wider(names_from = Year, values_from = c(N,FTE,prop))%>%
-   order_columns
-
-
-cols <- names(burp)[2:length(names(burp))]
-cols <- as_tibble(cols)
-
-separate_wider_delim(cols,cols=value,delim="_",names=c("col","year"))
-
-
+   order_columns_by_year %>%
+   make_double_header_table(caption = "Number of completed checks by staff compared to research FTE, by department",colnames = c("N","FTE","%"))
 
 ```
 
