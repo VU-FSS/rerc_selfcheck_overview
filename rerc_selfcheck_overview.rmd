@@ -15,7 +15,7 @@ This file compiles data from from the self check of VU-FSS Research Ethics
 Review Committee into an overview document.
 
 The data is downloaded from qualtrics by rerc_selfcheck_qualtricsdownload.R and
-processed using functions as defined rerc_selfcheck_analysis.R
+processed using functions as defined rerc_selfcheck_overview_helpers.R
 
 -->
 
@@ -104,7 +104,7 @@ self_check_data %>%
    filter(Date > start_date) %>%
    filter(Position == "Student") %>%
    tabyl(Department,Outcome) %>%
-   adorn_totals(where="col")  %>%
+   adorn_totals(where=c("row","col"))  %>%
    standard_kable(paste("Number of completed checks by students by department 
                        since",start_date, sep=" ", collapse=NULL)) %>%
    row_spec(5,hline_after=TRUE)

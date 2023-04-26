@@ -8,8 +8,7 @@
 #Author: Koen Leuveld
 #June 2022
 #Refactored on Jan 2023
-
-#To Do: the annual report has tables with double headers; this is currently not possible
+#updated in april 2023
 
 library(tidyverse)
 library(lubridate)
@@ -18,30 +17,31 @@ library(lubridate)
 #date helpers
 academic_year <- function(data){
 #takes a date, and outputs the academic year, e.g. "2022-2023"
-      year1 = year(data) - ifelse(month(data) >= 9,0,1)
+      year1 = year(data) - ifelse(month(data) < 9,1,0)
       year2 = year1 + 1
 
       paste(year1,year2,sep="-")
 }
 
 year_quarter <- function(data){
+#takes a date and outputs a string that combines year and quarter, e.g. "2023-1"
    paste(year(data),ceiling(month(data)/3),sep="-")
 }
 
 year_month <- function(data){
-#takes a date and outputs a string that combines year and month, e.g. "2023-2"
+#takes a date and outputs a string that combines year and month, e.g. "2023-02"
     paste(year(data),
           str_pad(month(data),2,pad="0"),
           sep="-")
 }
 
 
-
+# Data manipulation functions
 compute_outcome <- function(data){
-    #count the number of issues in the check
-    #depends on the redesign published after 28-3-2022 
-    #no valid results for checks made before that date!
-    #returns a vector of "Review Needed"/"OK"
+#count the number of issues in the check
+#depends on the redesign published after 28-3-2022 
+#no valid results for checks made before that date!
+#returns a vector of "Review Needed"/"OK"
     numissues <- apply(data, 1, 
         function(x) sum(str_detect(x, "\\(\\*\\)$"),
                           na.rm = TRUE))
@@ -50,7 +50,7 @@ compute_outcome <- function(data){
 }
 
 
-## Data presentation functions
+
 crop_df <- function(data,var,n){
 # function to crop observations in a dataframe to observation with 
 # last N unique values in a variable
@@ -99,14 +99,35 @@ compute_totals <- function(data,vars,bool=TRUE) {
     data
 }
 
+
+get_years <- function(data) {
+#this function extracts the year-component out of combined column names
+#e.g. N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022  -> 2021,2021
+   data %>%
+   names %>%
+   as_tibble %>%
+   slice(2:n()) %>%
+   separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
+   select(year) %>%
+   unique %>%
+   as_vector   
+}
+
+order_columns_by_year <- function(data) {
+#a litte function to order combined columns by year
+#e.g. N_2021 N_2022  FTE_2021 FTE_2022 pct_2021 pct_2022 ->
+#     N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022 
+    years <- get_years(data)
+    relocate(data,ends_with(years),.after=last_col())
+}
+
+
 ##Functions to format kable tables
 set_widths <- function(kableinput,widths){
-#give a vector of numbers, and this function 
-#will add column_spec to set the ith column 
-#to the width of the ith element of the vector
-#take a kable object as input,
-#and returns kable input with column specs applied
-#kable %>% set_widths(c(1,2,2))
+#give a vector of numbers, and this function will add column_spec to set the 
+#ith column to the width of the ith element of the vector 
+#takes a kable object as input
+# returns kable input with column specs applied
     for (i in 1:length(widths)) {
         kableinput <- kableinput %>% column_spec(i,width=paste(widths[i],"cm",sep=""))
     }
@@ -126,30 +147,10 @@ standard_kable <- function(kableinput,caption,longtable=F){
 
 
 ##functions for the double headers
-get_years <- function(data) {
-#this function extracts the year-component out of combined column names
-#e.g. N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022  -> 2021,2021
-   data %>%
-   names %>%
-   as_tibble %>%
-   slice(2:n()) %>%
-   separate_wider_delim(cols=value,delim="_",names=c("col","year")) %>%
-   select(year) %>%
-   unique %>%
-   as_vector   
-}
-
-order_columns_by_year <- function(data) {
-#a litte function to order combined columns by year
-#e.g. N_2021 N_2022  FTE_2021 FTE_2022 pct_2021 pct_2022 ->
-#     N_2021 FTE_2021 pct_2021  N_2022 FTE_2022 pct_2022 
-   years <- get_years(data)
-   relocate(data,ends_with(years),.after=last_col())
-}
 
 
-make_double_header_table <- function(data,caption,colnames = c("N","FTE","%")) {
-
+make_double_header_table <- function(data,caption,colnames) {
+#takes a dataframe and converts into a kable table with a double header
    years <- get_years(data)
    num_years = length(years)
 
