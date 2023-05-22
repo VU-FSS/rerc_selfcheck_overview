@@ -8,7 +8,7 @@
 
 library(qualtRics)
 
-#this gives an error, but is still useful for counts of self-checks
+# this gives an error, but is still useful for counts of self-checks
 self_check_all_raw <- fetch_survey(surveyID = "SV_6hCj2czIWzboW6V", 
 	                    start_date = "1900-01-01",
                         end_date = "2100-12-31",

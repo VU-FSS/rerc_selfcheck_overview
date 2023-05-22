@@ -16,7 +16,6 @@ Review Committee into an overview document.
 
 The data is downloaded from qualtrics by rerc_selfcheck_qualtricsdownload.R and
 processed using functions as defined rerc_selfcheck_overview_helpers.R
-
 -->
 
 
@@ -31,17 +30,15 @@ setwd("C:/Users/kld330/git/rerc_selfcheck_overview")
 download_data <- T
 
 
-#Download data to update CSV files used by RERC_analysis.r
+# Download data to update CSV files used by RERC_analysis.r
 if (download_data) {
 	source("rerc_selfcheck_qualtricsdownload.R") 
 }
 
-#load helper functions
+# load helper functions
 source("rerc_selfcheck_overview_helpers.r")
 
-
-
-#laod and clean data
+# load and clean data
 departments = data.frame(Q2.6 = c("Communication Science",
                                   "Organization Sciences",
                                   "Public Administration and Political Science",
@@ -63,72 +60,77 @@ self_check_data <-
    add_column(Outcome = compute_outcome(.)) %>%
 
    #misc cleaning
-   mutate(Position =  ifelse(Q2.4 == "PhD candidate" | 
+   mutate(Position = ifelse(Q2.4 == "PhD candidate" | 
                             Q2.4 == "Postdoc / assistant / associate / full professor",
                             "Staff","Student")) %>%
    mutate(Position_detailed =  Position) %>%
-   mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","PhD","Staff")) %>%
+   mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","
+                                      PhD","Staff")) %>%
    right_join(departments) %>%
    rename(Department = Dept) %>%
    mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
    rename(Project = Q2.8) %>%
    mutate(Project = gsub("[\r\n]", " ", Project))  %>%
-   select(Date,Name,Project,Position,Position_detailed,Department,Outcome,Month,Quarter,Year,Academic_Year)
+   select(Date,Name,Project,Position,Position_detailed,
+          Department,Outcome,Month,Quarter,Year,Academic_Year)
 
-sep <- read_csv("data/admin/SEP_tabellen.csv") %>%
+sep <- 
+   read_csv("data/admin/SEP_tabellen.csv") %>%
    crop_df(Year,3) %>%
    rename(FTE =`Research Time`) %>%
    mutate(Year = as.character(Year))
 
-student_numbers <-   read_csv("data/admin/Studenten_tabellen.csv") %>%
+student_numbers <-   
+   read_csv("data/admin/Studenten_tabellen.csv") %>%
    crop_df(Academic_Year,3) 
     
 ```
 
 ```{r , echo=FALSE, message = FALSE}
    
-#full staff overview
+# full staff overview
 self_check_data %>%
    filter(Date > start_date) %>%
    filter(Position == "Staff") %>%
-   select(Date,Name,Dept = Department,Position = Position_detailed,Project,Outcome) %>%
+   select(Date,Name,Dept = Department,Position = Position_detailed,
+          Project,Outcome) %>%
    standard_kable(paste("Completed self checks by staff and PhD candidates 
    						  since",start_date, sep=" ", collapse=NULL),
                   longtable = T)  %>%
    kable_styling(latex_options = "repeat_header") %>%
    set_widths(c(2,2.5,1,1,4.5,1))
 
-
-#student detailed summary
+# student detailed summary
 self_check_data %>%
    filter(Date > start_date) %>%
    filter(Position == "Student") %>%
    tabyl(Department,Outcome) %>%
    adorn_totals(where=c("row","col"))  %>%
    standard_kable(paste("Number of completed checks by students by department 
-                       since",start_date, sep=" ", collapse=NULL)) %>%
+                         since",start_date, sep=" ", collapse=NULL)) %>%
    row_spec(5,hline_after=TRUE)
 
-#staff past year
+# staff past year
 self_check_data %>%
    filter(Position == "Staff") %>%
    crop_df(Month,14) %>%
    tabyl(Month,Department)%>%
    adorn_totals(where=c("row","col")) %>%
-   standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
+   standard_kable(caption="Number of completed checks by staff and PhD 
+                           candidates in the last 14 months") %>%
    row_spec(14,hline_after=TRUE)
 
-#students past year
+# students past year
 self_check_data %>%
    filter(Position == "Student") %>%
    crop_df(Month,14) %>%
    tabyl(Month,Department)%>%
    adorn_totals(where=c("row","col")) %>%
-   standard_kable(caption="Number of completed checks by master students in the last 14 months") %>%
+   standard_kable(caption="Number of completed checks by master students in the
+                           last 14 months") %>%
    row_spec(14,hline_after=TRUE)
 
-
-#with FTE
+# Staff with FTE
 self_check_data %>%
    filter(Position == "Staff") %>%
    tabyl(Year,Department) %>%
@@ -138,20 +140,25 @@ self_check_data %>%
    mutate(prop = N/FTE * 100) %>%
    pivot_wider(names_from = Year, values_from = c(N,FTE,prop))%>%
    order_columns_by_year %>%
-   make_double_header_table(caption = "Number of completed checks by staff (N) compared to research FTE, by department",colnames = c("N","FTE","%"))
+   make_double_header_table(caption = "Number of completed checks by staff (N) 
+                                       compared to research FTE, by department",
+                            colnames = c("N","FTE","%"))
 
-
+# Students with total student numbers
 self_check_data %>%
    filter(Position == "Student") %>%
    tabyl(Academic_Year,Department) %>%
-   pivot_longer(cols = !Academic_Year,names_to="Department", values_to = "N") %>%
+   pivot_longer(cols = !Academic_Year,names_to="Department", 
+                values_to = "N") %>%
    inner_join(student_numbers) %>%
    compute_totals(Academic_Year) %>%
    mutate(prop = N/Students * 100) %>%
    pivot_wider(names_from = Academic_Year, values_from = c(N,Students,prop))%>%
    order_columns_by_year %>%
-   make_double_header_table(caption = "Number of completed checks by students (N) compared to total student numbers (Stud.), by department",colnames = c("N","Stud.","%"))
-
+   make_double_header_table(caption = "Number of completed checks by students
+                                       (N) compared to total student numbers 
+                                       (Stud.), by department",
+                           colnames = c("N","Stud.","%"))
 
 ```
 
@@ -159,8 +166,7 @@ self_check_data %>%
 
 ```{r echo=FALSE, message = F}
 
-
-#plot the number of self-checks by staff and students
+# plot the number of self-checks by staff and students
 self_check_data %>%
    collapse_df(Month,Position) %>%
    crop_df(Month,48) %>%
@@ -170,12 +176,13 @@ self_check_data %>%
       theme(axis.text.x = element_text(angle = 90)) +
       ggtitle("Number of completed self-checks by staff and students") 
 
-#staff data broken down by department
+# staff data broken down by department
 self_check_data %>%
    filter(Position == "Staff") %>%
    collapse_df(Quarter,Department) %>%
    crop_df(Quarter,16) %>%
-   ggplot(aes(x=Quarter, y=N, group=Department,color=Department,fill=Department)) +
+   ggplot(aes(x=Quarter, y=N, group=Department,
+              color=Department,fill=Department)) +
       geom_bar(stat="identity",color="black", position=position_dodge()) +          
       geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
       theme(axis.text.x = element_text(angle = 90)) +
