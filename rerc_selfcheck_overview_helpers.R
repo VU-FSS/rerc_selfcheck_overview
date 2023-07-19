@@ -12,7 +12,11 @@
 
 library(tidyverse)
 library(lubridate)
-
+library(pdftools)
+library(stringr)
+library(kableExtra)
+library(janitor)
+library(knitr)
 
 #date helpers -------------------------------------------------------------
 academic_year <- function(data){
@@ -165,3 +169,54 @@ make_double_header_table <- function(data,caption,colnames) {
       row_spec(5,hline_after=TRUE) %>%
       add_header_above(header = top_col_spec)
 }   
+
+
+
+##########################
+#ADMIN DATA
+##############
+
+pdf_to_tibble <- function(file,pages=null,lines,cols,headers) {
+# takes a pdf file, and outputs a tibble
+# specify the pages and lines where the table is, as well as the number of columns
+# with headers you can specify a vector of column names
+
+    data <- pdf_text(file)
+
+    if (!is.null(pages)){
+        data <- data[pages]
+    }
+    data <- strsplit(data,"\n")
+    data <- unlist(data)
+    data <- data[lines]
+    data <- trimws(data)
+    data <-  str_split_fixed(data, " {2,}", cols)
+
+    colnames(data) <- c("Department",headers)
+    data[,1] <- rows
+    data <- as_tibble(data)
+
+
+    #convert to numeric
+    data <-
+        data %>% 
+        mutate(across(!Department,~str_replace(.x,",","."))) %>%
+        mutate(across(!Department,as.numeric))
+
+
+    #combine political science and public administration
+    pspa <-
+        data %>%
+        filter(Department == "PS" | Department == "PA") %>%
+        summarise(across(where(is.character), ~"PSPA"),
+                  across(where(is.numeric),sum))
+
+    data <-
+        data %>%
+        filter(Department != "PS" & Department != "PA") %>%
+        bind_rows(pspa)
+
+        data
+}
+
+
