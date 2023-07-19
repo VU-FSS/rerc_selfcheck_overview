@@ -1,0 +1,136 @@
+---
+title: "Research Ethics Review Committee Anual Report 2021-2022"
+date: "`r Sys.Date()`"
+author: "Koen Leuveld and René Bekkers"
+output: pdf_document
+header-includes:
+   - \usepackage{booktabs}
+---
+
+
+```{r, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(janitor)
+
+# load helper functions
+source("rerc_selfcheck_overview_helpers.r")
+source("rerc_selfcheck_datacleaning.R")
+
+
+# load and clean data
+departments = data.frame(Q2.6 = c("Communication Science",
+                                  "Organization Sciences",
+                                  "Public Administration and Political Science",
+                                  "Social and Cultural Anthropology",
+                                  "Sociology"),
+                         Dept=c("COM","ORG","PSPA","SCA","SOC"))
+
+self_check_data <- 
+   read_csv("data/personal/self_check_all.csv") %>%
+   
+   #dates
+   add_column(Date = as_date(ymd_hms(.$RecordedDate))) %>%
+   add_column(Academic_Year = academic_year(.$RecordedDate)) %>%
+   add_column(Year = as.character(year(.$RecordedDate))) %>%
+   add_column(Quarter = year_quarter(.$RecordedDate)) %>%
+   add_column(Month = year_month(.$RecordedDate)) %>%
+
+   #outcome
+   add_column(Outcome = compute_outcome(.)) %>%
+
+   #misc cleaning
+   mutate(Position = ifelse(Q2.4 == "PhD candidate" | 
+                            Q2.4 == "Postdoc / assistant / associate / full professor",
+                            "Staff","Student")) %>%
+   mutate(Position_detailed =  Position) %>%
+   mutate(Position_detailed =  ifelse(Q2.4 == "PhD candidate","
+                                      PhD","Staff")) %>%
+   right_join(departments) %>%
+   rename(Department = Dept) %>%
+   mutate(Name=str_c(Q2.1_1,Q2.1_2,sep=" "))%>%
+   rename(Project = Q2.8) %>%
+   mutate(Project = gsub("[\r\n]", " ", Project))  %>%
+   select(Date,Name,Project,Position,Position_detailed,
+          Department,Outcome,Month,Quarter,Year,Academic_Year)
+
+
+```
+
+
+
+
+# Introduction
+This memo reports research ethics review activities at the Faculty of Social Sciences at Vrije Universiteit Amsterdam in the academic year 2021/2022. Since 2016 the RERC has reviewed ethics issues of research by faculty members. The report gives an overview of the composition of the RERC and its activities, including the number self-checks done by faculty members and students and of the applications for full review. 
+
+<!-- Rene: RB attended NETHICS meetings. 
+A special meeting of the BMDO/OPCO, with action plan
+No letters to the FB -->
+
+# Membership Composition
+The RERC consists of five members, one from each department of the Faculty. The RERC is supported by a secretary supplied by the Research Support Office: Koen Leuveld, who is also Data Steward and Privacy Champion. The members, and the dates by which their appointments end, are listed in Table 1. Throughout the academic year (September - June) members meet on a monthly basis to discuss ethics issues and policies within the faculty.
+
+```{r,  echo=FALSE, message = FALSE}
+read_csv("data/admin/Term_limits.csv") %>%
+kable(booktabs = T, 
+      longtable=F,
+      caption="Composition of the RERC",
+      position="h") %>%
+kable_styling(latex_options = "striped") %>%
+add_footnote(
+  label = "Peter Versteeg will be replaced by Luisa Schneider, effective 1.9.2022",
+  notation = "none"
+)
+```
+
+
+# Research
+
+The self-check is the entry-point for the ethics review procedure. 
+The RERC has made it a priority to make the self-check easy
+to fill in, to increase the number of researchers taking the self-
+check. This allows the RERC to advise more researchers, and also provides
+data on what research is being done in the faculty.
+
+```{r , echo=FALSE, message = FALSE}
+
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   collapse_df(Academic_Year) %>%
+   crop_df(Academic_Year,4) %>%
+   ggplot(aes(x=Academic_Year, y=N,group=1)) +
+      geom_line() +          
+      geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
+      theme(axis.text.x = element_text(angle = 90)) +
+      ggtitle("Number of completed self-checks by staff") 
+
+
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   crop_df(Academic_Year,4) %>%
+   tabyl(Department,Academic_Year)%>%
+   adorn_totals(where=c("row","col")) %>%
+   standard_kable(caption="Number of completed checks by staff and PhD 
+                           candidates in the last 14 months")>%
+   row_spec(5,hline_after=TRUE)
+
+```
+In 2022 - 2023 N researchers performed a self-check with the RERC.
+Overall, the trend of number of checks done by researchers increases/
+decreases. The trend of self-checks per researcher (expressed in Research FTE)
+is decreasing/increasing. See the appendix for more information.
+
+Out of these N self-checks, there were N indications for full review.
+For a breakdown of ethics issues present in these, refer to table X.
+
+Not all self-checks indicating the need for full review have resulted in an application.
+
+
+
+
+Out of these N, P proceeded to request full review.
+
+
+# Education
+
+# Appendix
