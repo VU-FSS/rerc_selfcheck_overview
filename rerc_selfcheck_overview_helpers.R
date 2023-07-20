@@ -98,6 +98,27 @@ compute_totals <- function(data,vars) {
         ungroup()
 }
 
+
+get_ethics_issues <- function(data) {
+   for (i in 1:nrow(ethics_issues)) {
+      old_varname = ethics_issues[i,]$old
+      new_varname = ethics_issues[i,]$new
+
+      data <-  
+         data %>%   
+         rename(!!new_varname := old_varname)
+
+      vector <- as_vector(data[,new_varname])
+      vector <- str_detect(vector,"\\(\\*\\)$") * 1
+      vector[is.na(vector)] <- 0
+
+      data[,new_varname] <- vector
+   } 
+
+   data
+}
+
+
 # Functions to format kable tables -----------------------------
 
 get_years <- function(data) {

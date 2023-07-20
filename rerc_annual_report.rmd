@@ -2,7 +2,7 @@
 title: "Research Ethics Review Committee Anual Report 2021-2022"
 date: "`r Sys.Date()`"
 author: "Koen Leuveld and René Bekkers"
-output: pdf_document
+output: bookdown::pdf_document2
 header-includes:
    - \usepackage{booktabs}
 ---
@@ -15,6 +15,10 @@ header-includes:
 # load helper functions
 source("rerc_selfcheck_overview_helpers.r")
 source("rerc_selfcheck_datacleaning.R")
+
+
+# source("rerc_selfcheck_qualtricsdownload.R") 
+
 
 ```
 
@@ -44,47 +48,114 @@ add_footnote(
 )
 ```
 
+```{r sc-staff-by-year, include=FALSE}
+
+get_selfchecks <- function(var, position, value, outcome=NULL) {
+   data <- self_check_data 
+
+   if(!is.null(outcome)){
+      data <- 
+         data %>%
+         filter(Outcome == outcome)
+   }
+
+   data %>%
+   filter(Position == position) %>%
+   filter({{var}} == value) %>%
+   summarize(n = n())  %>%
+   pull(1)
+
+}
+
+get_fullreviews <- function(var, value) {
+   data <- full_review_data 
+
+   data %>%
+   filter({{var}} == value) %>%
+   summarize(n = n())  %>%
+   pull(1)
+
+}
+
+get_fullreviews(Academic_Year,"2022-2023")
+
+```
+
 
 # Research
 
-The self-check is the entry-point for the ethics review procedure. 
-The RERC has made it a priority to make the self-check easy
-to fill in, to increase the number of researchers taking the self-
-check. This allows the RERC to advise more researchers, and also provides
-data on what research is being done in the faculty.
+A priority of the RERC has been to make the ethics review procedure more 
+accessible. 
+This starts with the self-check, which should not take much time to fill in and
+should not cause confusion. 
+To achieve this, the RERC has changed the self-check late in the 2021-2022 
+Academic Year (28-03-2022).
+Figure \@ref(fig:sc-staff-plot) and Table \@ref(tab:sc-staff-tab) show that 
+the number of self-checks has increased somewhat
+since then: from `r get_selfchecks(Academic_Year,"Staff","2021-2022")` in 
+2021-2022 to `r get_selfchecks(Academic_Year,"Staff","2022-2023")` in 2022-2023. 
+Of course this increase may have been caused by other reasons that the work of 
+the RERC to make the procedures more accessible.
+Possible alternative explanations include growth in staff or number or an
+increase in research projects. 
+The tables in the appendix explore this in more detail. 
+In 2022 (the last year for which data is available in the SEP tables) 
+there were more self-checks per research FTE (Table \@ref(tab:sc-staff-fte)) 
+and per publication (Table \@ref(tab:sc-staff-outputs)).
 
-```{r , echo=FALSE, message = FALSE}
+Whatever the cause of the increased number of self-checks, they are good news. 
+As it stands now, the self-check is one of the few monitoring tools available 
+to the faculty to see how many researchers are using sensitive data or data from
+vulnerable subject pools. 
+More researchers taking the self-check thus means that the faculty has a better
+view on what's happening.
+In order to both increase the quality of monitoring, and the accessiblity of the
+review procedure, the RERC will take part in a pilot by the library to build a
+new system to replace the self-check. This is expected to start in the fall of 
+2023.
+
+```{r sc-staff-plot, fig.cap = "Number of completed self-checks by staff", echo=FALSE, message = FALSE}
 
 self_check_data %>%
    filter(Position == "Staff") %>%
-   collapse_df(Academic_Year) %>%
-   crop_df(Academic_Year,4) %>%
-   ggplot(aes(x=Academic_Year, y=N,group=1)) +
+   collapse_df(Quarter) %>%
+   filter(Quarter != "2023-3") %>%
+   crop_df(Quarter,16) %>%
+   ggplot(aes(x=Quarter, y=N,group=1)) +
       geom_line() +          
       geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
-      theme(axis.text.x = element_text(angle = 90)) +
-      ggtitle("Number of completed self-checks by staff") 
+      theme(axis.text.x = element_text(angle = 90)) #+
+      #ggtitle("Number of completed self-checks by staff") 
+```
 
+```{r sc-staff-tab, echo=FALSE, message = FALSE}
 
 self_check_data %>%
    filter(Position == "Staff") %>%
    crop_df(Academic_Year,4) %>%
    tabyl(Department,Academic_Year)%>%
    adorn_totals(where=c("row","col")) %>%
-   standard_kable(caption="Number of completed checks by staff and PhD 
-                           candidates in the last 14 months") %>%
+   standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
    row_spec(5,hline_after=TRUE)
 
 ```
-In 2022 - 2023 N researchers performed a self-check with the RERC.
-Overall, the trend of number of checks done by researchers increases/
-decreases. The trend of self-checks per researcher (expressed in Research FTE)
-is decreasing/increasing. See the appendix for more information.
+Out of these `r get_selfchecks(Academic_Year,"Staff","2022-2023")`
+self-checks, there were 
+`r get_selfchecks(Academic_Year,"Staff","2022-2023","Review needed")` 
+indications for full review (for an overview of the issues present, 
+see Table (\@ref(tab:sc-issues)).
 
-Out of these N self-checks, there were N indications for full review.
-For a breakdown of ethics issues present in these, refer to table X.
 
-Not all self-checks indicating the need for full review have resulted in an application.
+Not all self-checks indicating the need for full review have resulted in 
+an application. 
+The RERC only received `r get_fullreviews(Academic_Year,"2022-2023")` 
+applications.
+This is by design: one of the intended purposes of the self-check is to allow
+researchers to change their research design to precent ethics issues altogether.
+
+
+
+
 
 
 
@@ -95,3 +166,78 @@ Out of these N, P proceeded to request full review.
 # Education
 
 # Appendix
+
+
+```{r sc-staff-fte, echo=FALSE, message = FALSE}
+
+# Staff with FTE
+fte <- 
+   sep %>%
+   select(Department,Year,FTE) %>%
+   crop_df(Year,3)
+
+
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   tabyl(Year,Department) %>%
+   pivot_longer(cols = !Year,names_to="Department", values_to = "N") %>%
+   inner_join(fte) %>%
+   compute_totals(Year) %>%
+   mutate(prop = N/FTE * 100) %>%
+   pivot_wider(names_from = Year, values_from = c(N,FTE,prop))%>%
+   order_columns_by_year %>%
+   make_double_header_table(caption = "Number of completed checks by staff (N) 
+                                       compared to research FTE, by department",
+                            colnames = c("N","FTE","%"))
+
+```
+
+
+
+```{r sc-staff-outputs, echo=FALSE, message = FALSE}
+
+# Staff with outputs
+
+outputs <-
+   sep %>%
+   select(Department,Year,Publications) %>%
+   crop_df(Year,3)
+
+
+
+self_check_data %>%
+   filter(Position == "Staff") %>%
+   tabyl(Year,Department) %>%
+   pivot_longer(cols = !Year,names_to="Department", values_to = "N") %>%
+   inner_join(outputs) %>%
+   compute_totals(Year) %>%
+   mutate(prop = N/Publications * 100) %>%
+   pivot_wider(names_from = Year, values_from = c(N,Publications,prop))%>%
+   order_columns_by_year %>%
+   make_double_header_table(caption = "Number of completed checks by staff (N) 
+                                       compared to publications, by department",
+                            colnames = c("N","Pub.","%"))
+
+
+```
+
+```{r sc-issues, echo=FALSE, message = FALSE}
+
+
+self_check_data %>%
+   filter(Academic_Year == "2022-2023") %>%
+   filter(Position == "Staff") %>%
+   filter(Outcome == "Review needed") %>%
+   select(Name, Project,all_of(ethics_issues$new),Outcome) %>%
+   pivot_longer(cols = consent:confidentiality, names_to="item", values_to = "N") %>%
+   group_by(item) %>%
+   summarize(n = sum(N)) %>%
+   rename(new=item) %>%
+   right_join(ethics_issues) %>%
+   select(Issue,n) %>%
+   standard_kable(caption="Ethics issues present in research 2022-2023") %>%
+   add_footnote(
+     label = "The total number of issues is larger than the number of self-checks requiring full review, because some projects have more than issue",
+     notation = "none")
+
+```
