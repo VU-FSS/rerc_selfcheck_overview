@@ -5,15 +5,15 @@
 
 ethics_issues <- tribble(
    ~old,~new,~Issue,
-   "Q5.1","consent","No consent asked.",
-   "Q6.1","riskpart","Risk to participants.",
-   "Q6.2","riskpop","Potential risks to a population or group",
-   "Q6.3","vulnerable","Vulnerable participants.",
-   "Q6.4","incentives","Strong recruitment incentives.",
-   "Q6.5","stimuli","Distressing, offensive, or age-inappropriate research stimuli",
-   "Q6.6","riskresearcher","Potential risks to the researcher",
-   "Q7.1","deception","Deception of participants",
-   "Q8.1","confidentiality","Participant information not treated confidentially."
+   "Q5.1", "consent","No consent asked.",
+   "Q6.1", "riskpart","Risk to participants.",
+   "Q6.2", "riskpop","Potential risks to a population or group",
+   "Q6.3", "vulnerable","Vulnerable participants.",
+   "Q6.4", "incentives","Strong recruitment incentives.",
+   "Q6.5", "stimuli","Distressing, offensive, or age-inappropriate research stimuli",
+   "Q6.6", "riskresearcher","Potential risks to the researcher",
+   "Q7.1", "deception","Deception of participants",
+   "Q8.1", "confidentiality","Participant information not treated confidentially."
 )
 
 departments = data.frame(Q2.6 = c("Communication Science",

@@ -8,17 +8,11 @@ header-includes:
 ---
 
 
-```{r, include=FALSE}
-
-
-
+```{r setup, include=FALSE}
 # load helper functions
 source("rerc_selfcheck_overview_helpers.r")
-source("rerc_selfcheck_datacleaning.R")
-
-
 # source("rerc_selfcheck_qualtricsdownload.R") 
-
+source("rerc_selfcheck_datacleaning.R")
 
 ```
 
@@ -125,7 +119,7 @@ self_check_data %>%
       geom_line() +          
       geom_smooth(method="loess",formula = y ~ x,se=FALSE) +           
       theme(axis.text.x = element_text(angle = 90)) #+
-      #ggtitle("Number of completed self-checks by staff") 
+      #ggtitle("Number of completed self-checks by staff and PhD candidates") 
 ```
 
 ```{r sc-staff-tab, echo=FALSE, message = FALSE}
@@ -135,7 +129,7 @@ self_check_data %>%
    crop_df(Academic_Year,4) %>%
    tabyl(Department,Academic_Year)%>%
    adorn_totals(where=c("row","col")) %>%
-   standard_kable(caption="Number of completed checks by staff and PhD candidates in the last 14 months") %>%
+   standard_kable(caption="Number of completed checks by staff and PhD candidates by acedamic year") %>%
    row_spec(5,hline_after=TRUE)
 
 ```
@@ -143,7 +137,7 @@ Out of these `r get_selfchecks(Academic_Year,"Staff","2022-2023")`
 self-checks, there were 
 `r get_selfchecks(Academic_Year,"Staff","2022-2023","Review needed")` 
 indications for full review (for an overview of the issues present, 
-see Table (\@ref(tab:sc-issues)).
+see Table \@ref(tab:sc-issues)).
 
 
 Not all self-checks indicating the need for full review have resulted in 
@@ -237,7 +231,7 @@ self_check_data %>%
    select(Issue,n) %>%
    standard_kable(caption="Ethics issues present in research 2022-2023") %>%
    add_footnote(
-     label = "The total number of issues is larger than the number of self-checks requiring full review, because some projects have more than issue",
+     label = "The total number of issues is greater than the number of self-checks requiring full review, because projects may have more than one issue",
      notation = "none")
 
 ```
